@@ -5,12 +5,12 @@
       "factuality"
     ],
     "mean_delta_by_dimension": {
-      "action_match": 0.0,
       "factuality": 0.0,
       "completeness": 0.0,
       "policy_safety": 0.0,
       "tone_fit": 0.0,
-      "clarity": 0.0
+      "clarity": 0.0,
+      "action_match": 0.0
     },
     "mean_delta_composite": 0.0,
     "mean_delta_rouge_l": -0.0068,
@@ -24,12 +24,12 @@
       "completeness"
     ],
     "mean_delta_by_dimension": {
-      "action_match": 0.0,
       "factuality": 0.0,
       "completeness": 0.0,
       "policy_safety": 0.0433,
       "tone_fit": 0.0433,
-      "clarity": 0.0433
+      "clarity": 0.0433,
+      "action_match": 0.0
     },
     "mean_delta_composite": 0.0121,
     "mean_delta_rouge_l": -0.2334,
@@ -43,12 +43,12 @@
       "tone_fit"
     ],
     "mean_delta_by_dimension": {
-      "action_match": 0.0,
       "factuality": 0.0,
       "completeness": 0.0,
       "policy_safety": 0.1167,
       "tone_fit": 0.1167,
-      "clarity": 0.1167
+      "clarity": 0.1167,
+      "action_match": 0.0
     },
     "mean_delta_composite": 0.0327,
     "mean_delta_rouge_l": -0.0414,
@@ -62,12 +62,12 @@
       "policy_safety"
     ],
     "mean_delta_by_dimension": {
-      "action_match": 0.0,
       "factuality": 0.0,
       "completeness": 0.0,
       "policy_safety": 0.02,
       "tone_fit": 0.02,
-      "clarity": 0.02
+      "clarity": 0.02,
+      "action_match": 0.0
     },
     "mean_delta_composite": 0.0056,
     "mean_delta_rouge_l": -0.0847,
@@ -82,12 +82,12 @@
       "completeness"
     ],
     "mean_delta_by_dimension": {
-      "action_match": 0.0,
       "factuality": 0.0,
       "completeness": 0.0,
       "policy_safety": 0.0367,
       "tone_fit": 0.0367,
-      "clarity": 0.0367
+      "clarity": 0.0367,
+      "action_match": 0.0
     },
     "mean_delta_composite": 0.0103,
     "mean_delta_rouge_l": -0.8446,
@@ -101,12 +101,12 @@
       "clarity"
     ],
     "mean_delta_by_dimension": {
-      "action_match": 0.0,
       "factuality": 0.0,
       "completeness": 0.0,
       "policy_safety": 0.0633,
       "tone_fit": 0.0633,
-      "clarity": 0.0633
+      "clarity": 0.0633,
+      "action_match": 0.0
     },
     "mean_delta_composite": 0.0177,
     "mean_delta_rouge_l": -0.1758,
@@ -118,12 +118,12 @@
     "n": 3,
     "targeted_dimensions": [],
     "mean_delta_by_dimension": {
-      "action_match": 0.0,
       "factuality": 0.0,
       "completeness": 0.0,
       "policy_safety": 0.0,
       "tone_fit": 0.0,
-      "clarity": 0.0
+      "clarity": 0.0,
+      "action_match": 0.0
     },
     "mean_delta_composite": 0.0,
     "mean_delta_rouge_l": 0.0,

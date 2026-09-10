@@ -14,14 +14,14 @@ from rich.table import Table
 
 from .config import DATA_DIR, RUNS_DIR, SETTINGS
 from .llm import LLM
-from .dataset.build import build_dataset, jaccard, load_dataset, _shingles
+from .dataset.build import ASKS_SYS, build_dataset, jaccard, load_dataset, _shingles
 from .evaluate import aggregate, runner
 from .evaluate.audit import audit as run_audit
 from .evaluate.judge import judge as run_judge
 from .evaluate.score import build_score
 from .generate.generator import SYSTEMS, SYSTEM_DESCRIPTIONS, generate_one
 from .generate.retrieve import Retriever
-from .schemas import Email, Example, Reply
+from .schemas import AskExtraction, Email, Example, Reply
 from .taxonomy import DIMENSIONS
 from .validate import agreement, perturb, reliability
 from .validate.human_labels import gold_labels, human_labels
@@ -129,7 +129,20 @@ def cmd_suggest(args: argparse.Namespace) -> None:
                        "open_questions": gen.reply.open_questions,
                        "retrieved_exemplars": gen.retrieved_ids})
             if args.explain:
-                con.rule("ACCURACY (no reference reply, so action_match is not meaningful)")
+                con.rule("ACCURACY")
+                con.print("[dim]No reference reply exists for a live email, so "
+                          "action_match is dropped and the remaining weights are "
+                          "renormalised. The other five dimensions are all "
+                          "reference-free and score normally.[/]\n")
+                # Extract the customer's asks from the email now -- without them
+                # `completeness` has nothing to measure and would score 1.0 by
+                # default, which is exactly the un-failable metric we avoid.
+                asks = await llm.structured(
+                    [{"role": "system", "content": ASKS_SYS},
+                     {"role": "user", "content": "Subject: " + ex.incoming.subject
+                      + "\n\n---\n" + ex.incoming.body + "\n---"}],
+                    AskExtraction, model=llm.s.judge_model, max_tokens=700)
+                ex.customer_asks = [a.strip() for a in asks.asks if a.strip()][:8]
                 a = await run_audit(llm, ex, gen.reply)
                 v = await run_judge(llm, ex, gen.reply)
                 s = build_score(ex, gen, a, v)

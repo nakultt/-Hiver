@@ -18,6 +18,16 @@ def _h(text: str, n: int) -> int:
 def mock_for(prompt: str, *, json_mode: bool, variant: int = 0) -> str:
     p = prompt
 
+    if "You audit a draft support reply" in p:
+        return json.dumps({
+            "intent": "answer_question",
+            "actions": ["state_refund_policy", "set_expectation_timeline"],
+            "claims": [{"claim": "Refunds on monthly plans are within 30 days.",
+                        "verdict": "supported", "source_id": "REF-01", "note": "mock"}],
+            "asks": [{"ask": "mock ask", "status": "answered", "evidence": "mock"}],
+            "breaches": [],
+        })
+
     if "You extract what a customer actually asked for" in p:
         return json.dumps({"asks": ["Mock ask one", "Mock ask two"]})
 
@@ -68,16 +78,6 @@ def mock_for(prompt: str, *, json_mode: bool, variant: int = 0) -> str:
             "actions": ["state_refund_policy", "set_expectation_timeline"],
             "cited_facts": ["REF-01"], "confidence": 0.4,
             "needs_human_review": True, "open_questions": [],
-        })
-
-    if "You audit a draft support reply" in p:
-        return json.dumps({
-            "intent": "answer_question",
-            "actions": ["state_refund_policy", "set_expectation_timeline"],
-            "claims": [{"claim": "Refunds on monthly plans are within 30 days.",
-                        "verdict": "supported", "source_id": "REF-01", "note": "mock"}],
-            "asks": [{"ask": "mock ask", "status": "answered", "evidence": "mock"}],
-            "breaches": [],
         })
 
     if "You review draft replies" in p:

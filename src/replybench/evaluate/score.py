@@ -128,7 +128,21 @@ def build_score(
     *,
     weights: dict[str, float] | None = None,
 ) -> ResponseScore:
-    weights = weights or DEFAULT_WEIGHTS
+    """Score one reply.
+
+    If the example carries no reference reply -- which is the case for a live
+    incoming email, the whole point of the product -- `action_match` is not
+    computable. It is then DROPPED and the remaining weights renormalised, rather
+    than scored 1.0 for having an empty gold set on both sides. Silently
+    awarding a perfect score for absent ground truth would make the composite
+    unable to fail, which is the failure this project exists to avoid.
+    """
+    weights = dict(weights or DEFAULT_WEIGHTS)
+    has_reference = bool(example.reply.body.strip())
+    if not has_reference:
+        weights.pop("action_match", None)
+        total = sum(weights.values()) or 1.0
+        weights = {k: v / total for k, v in weights.items()}
     body = gen.reply.body
 
     if gen.error or not body.strip():
@@ -150,13 +164,6 @@ def build_score(
     policy = min(verdict.policy_safety.score, cap)
 
     dims = {
-        "action_match": DimensionScore(
-            score=round(af1, 4),
-            reason=("weighted F1 vs the reply a human actually sent; "
-                    + str(len(missing)) + " missing, " + str(len(extra)) + " extra"),
-            evidence=(["missing: " + ", ".join(missing)] if missing else [])
-                     + (["extra: " + ", ".join(extra)] if extra else []),
-        ),
         "factuality": DimensionScore(score=round(fact, 4), reason=fact_reason, evidence=fact_ev),
         "completeness": DimensionScore(score=round(comp, 4), reason=comp_reason, evidence=comp_ev),
         "policy_safety": DimensionScore(
@@ -169,8 +176,16 @@ def build_score(
         "tone_fit": verdict.tone_fit,
         "clarity": verdict.clarity,
     }
+    if has_reference:
+        dims["action_match"] = DimensionScore(
+            score=round(af1, 4),
+            reason=("weighted F1 vs the reply a human actually sent; "
+                    + str(len(missing)) + " missing, " + str(len(extra)) + " extra"),
+            evidence=(["missing: " + ", ".join(missing)] if missing else [])
+                     + (["extra: " + ", ".join(extra)] if extra else []),
+        )
 
-    composite = sum(dims[k].score * w for k, w in weights.items())
+    composite = sum(dims[k].score * w for k, w in weights.items() if k in dims)
     if hard:
         # A reply you cannot send is not a 0.7 with an asterisk.
         composite = min(composite, 0.20)

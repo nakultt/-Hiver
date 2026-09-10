@@ -187,3 +187,58 @@ def test_tokenizer_drops_stopwords_and_folds_suffixes():
 
 def test_retriever_survives_an_empty_corpus():
     assert Retriever([]).search("subject", "body") == []
+
+
+# ------------------------------------------------- scoring without a reference
+def _blank_verdict(v: float = 0.7):
+    from replybench.schemas import DimensionScore, JudgeVerdict
+    d = DimensionScore(score=v, reason="t", evidence=["q"])
+    return JudgeVerdict(tone_fit=d, clarity=d, policy_safety=d, holistic=d,
+                        would_send="light_edit")
+
+
+def _example(reference: str):
+    from replybench.schemas import Email, Example, Reply
+    return Example(
+        id="t", split="test", intent="answer_question", difficulty="routine",
+        incoming=Email(subject="s", body="Can I have a refund?", sender_name="A",
+                       sender_email="a@b.com"),
+        reply=Reply(body=reference, actions=["issue_refund"]),
+    )
+
+
+def _gen():
+    from replybench.schemas import GenerationRecord, SuggestedReply
+    # Long enough to clear the 40-char `reply_too_short` hard failure, which
+    # otherwise caps the composite at 0.20 and masks what these tests check.
+    return GenerationRecord(
+        example_id="t", system="main",
+        reply=SuggestedReply(body="Hi there,\n\nYes, that refund is on its way to you "
+                                  "now.\n\nPriya Raman\nKestrel Support"))
+
+
+def test_action_match_dropped_when_there_is_no_reference():
+    """A live email has no gold reply, so action_match is not computable.
+
+    It must be DROPPED, not scored 1.0 for having two empty sets. Scoring it 1.0
+    made `suggest --explain` report 0.92 for a placeholder reply -- a composite
+    that could not fail, which is the exact failure this project is about.
+    """
+    from replybench.evaluate.score import build_score
+    s = build_score(_example(""), _gen(), AuditResult(), _blank_verdict())
+    assert "action_match" not in s.dimensions
+
+
+def test_action_match_present_when_there_is_a_reference():
+    from replybench.evaluate.score import build_score
+    s = build_score(_example("Yes, refunded."), _gen(), AuditResult(), _blank_verdict())
+    assert "action_match" in s.dimensions
+
+
+def test_weights_renormalise_so_a_perfect_reply_can_still_reach_one():
+    """Dropping a dimension must not cap the composite below 1.0."""
+    from replybench.schemas import ClaimCheck
+    from replybench.evaluate.score import build_score
+    audit = AuditResult(claims=[ClaimCheck(claim="c", verdict="supported", source_id="REF-01")])
+    s = build_score(_example(""), _gen(), audit, _blank_verdict(1.0))
+    assert s.composite > 0.99

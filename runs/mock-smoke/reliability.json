@@ -1,0 +1,100 @@
+{
+  "self_consistency": {
+    "n_drafts": 4,
+    "k": 3,
+    "temperature": 0.7,
+    "mean_sd": 0.087,
+    "max_range": 0.27,
+    "rows": [
+      {
+        "example_id": "hard-annual-refund-demand",
+        "system": "main",
+        "samples": [
+          0.83,
+          0.56,
+          0.61
+        ],
+        "mean": 0.6667,
+        "sd": 0.1173,
+        "range": 0.27
+      },
+      {
+        "example_id": "hard-scale-pricing-probe",
+        "system": "main",
+        "samples": [
+          0.69,
+          0.82,
+          0.74
+        ],
+        "mean": 0.75,
+        "sd": 0.0535,
+        "range": 0.13
+      },
+      {
+        "example_id": "hard-hipaa-baa",
+        "system": "main",
+        "samples": [
+          0.63,
+          0.7,
+          0.84
+        ],
+        "mean": 0.7233,
+        "sd": 0.0873,
+        "range": 0.21
+      },
+      {
+        "example_id": "hard-feature-ship-date",
+        "system": "main",
+        "samples": [
+          0.81,
+          0.7,
+          0.59
+        ],
+        "mean": 0.7,
+        "sd": 0.0898,
+        "range": 0.22
+      }
+    ],
+    "interpretation": "Treat any between-system gap smaller than ~2x mean_sd as noise. This is the resolution limit of the judge."
+  },
+  "cross_model_judge": {
+    "n": 4,
+    "primary_judge": "gemini-2.5-flash-lite",
+    "secondary_judge": "gemini-2.5-flash",
+    "spearman_between_judges": 1.0,
+    "mean_shift": 0.0,
+    "primary_mean": 0.6935,
+    "secondary_mean": 0.6935,
+    "rows": [
+      {
+        "example_id": "hard-annual-refund-demand",
+        "system": "main",
+        "primary": 0.7848,
+        "secondary": 0.7848,
+        "delta": 0.0
+      },
+      {
+        "example_id": "hard-scale-pricing-probe",
+        "system": "main",
+        "primary": 0.7256,
+        "secondary": 0.7256,
+        "delta": 0.0
+      },
+      {
+        "example_id": "hard-hipaa-baa",
+        "system": "main",
+        "primary": 0.594,
+        "secondary": 0.594,
+        "delta": 0.0
+      },
+      {
+        "example_id": "hard-feature-ship-date",
+        "system": "main",
+        "primary": 0.6696,
+        "secondary": 0.6696,
+        "delta": 0.0
+      }
+    ],
+    "interpretation": "spearman_between_judges is the number that matters: it says whether the RANKING survives changing the judge. mean_shift is a calibration offset and is largely harmless -- a judge that is uniformly stricter still ranks systems the same way. A high shift with a high correlation means 'stricter but agrees'; a low correlation means the ranking is an artefact of the judge and the report should not be trusted."
+  }
+}
