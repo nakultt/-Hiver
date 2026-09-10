@@ -425,21 +425,37 @@ is not committed, because the free-tier key ran out of quota mid-build.**
 
 ### The quota story, in full
 
-The key provided was free-tier. `gemini-2.5-pro` is hard-blocked (`limit: 0`), and
-`gemini-2.5-flash-lite` allows **20 requests per rolling minute**. The synthetic corpus
-build needs 5 calls per row; the scored run needs 2 more per (example × system); the
-validation suite needs 2 per perturbation case. That is ~1,000 requests, or roughly an
-hour of wall clock at 20/min — more than the time available. I added a token-bucket
-rate limiter and a per-model budget guard rather than thrash on retries, but the clock
-won.
+The key provided was free-tier, and the binding limit turned out to be far tighter than
+the error messages first suggested. The quota that actually applies is:
+
+```
+quotaId : GenerateRequestsPerDayPerProjectPerModel-FreeTier
+  value : 20
+```
+
+**20 requests per day, per model.** Not per minute — the `retry in 26s` hint in the 429
+body misled me for a while, and I built a token-bucket rate limiter on the assumption it
+was a per-minute window before reading the `quotaId` and finding out otherwise.
+`gemini-2.5-pro` is separately hard-blocked at `limit: 0`.
+
+Against that ceiling: one dataset row costs 5 calls, so the daily allowance buys **four
+rows**. A scored run costs 2 calls per (example × system). The validation suite costs 2
+per perturbation case. A complete run is ~1,000 requests — fifty days of free-tier quota.
+
+This is not a "ran out of time" problem, it is a hard wall. The fix is one line: enable
+billing on the key (the full run costs roughly $3–5 at flash pricing), or point
+`LLM_BASE_URL` at any other OpenAI-compatible endpoint. Every call is content-addressed
+and cached to `.cache/`, so a run resumes exactly where it stopped.
 
 To produce the live numbers:
 
 ```bash
-replybench build-dataset --train 60 --test 16   # ~6 min at 20 req/min
+replybench build-dataset --train 60 --test 16
 replybench run                                  # all 5 systems
-replybench report
-replybench validate-metric
+replybench report                               # per-response + overall scores
+replybench validate-metric                      # metric unit tests
+replybench agreement                            # metric vs human labels + weight fit
+replybench reliability                          # judge noise + cross-model agreement
 ```
 
 Every LLM call is content-addressed and cached to `.cache/`, so an interrupted run
