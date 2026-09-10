@@ -1,25 +1,26 @@
 """Hybrid retrieval over past (email, reply) pairs and over the knowledge base.
 
-Why not embeddings?
--------------------
-The obvious move is a dense vector store. I did not use one, and the reason is
-worth stating because it is a trade-off rather than a shortcut:
+Three rankers, fused
+--------------------
+  * BM25 over the cleaned, quote-stripped body -- rewards rare-term hits.
+  * TF-IDF cosine -- rewards overall topical overlap, and disagrees with BM25
+    usefully.
+  * Dense embeddings -- the only one that survives vocabulary mismatch, where a
+    customer writes "single sign on" and the corpus says "SAML SSO".
 
-  * The Gemini free tier gives no embedding quota worth using, and adding a
-    second provider for embeddings would make the repo harder to run, which is
-    the one thing a take-home must not be.
-  * At this corpus size (~60 exemplars) lexical retrieval is genuinely
-    competitive. Dense retrieval earns its keep at 10^4-10^6 documents, where
-    vocabulary mismatch dominates; at 10^1-10^2 it mostly adds latency.
-  * The failure mode that actually matters here -- a customer saying "single
-    sign on" when the corpus says "SAML SSO" -- is handled by the *field-weighted*
-    BM25 below plus an intent prior, not by cosine distance.
+Fused with Reciprocal Rank Fusion rather than score averaging: the three live on
+different scales and normalising them well is fiddly, while RRF only needs the
+ordering.
 
-So: BM25 over the cleaned email body, TF-IDF cosine as a second opinion, fused
-with Reciprocal Rank Fusion. `EmbeddingBackend` is left as a stub with the
-interface it would need, so swapping one in is a contained change rather than a
-rewrite. The ablation `--system no_retrieval` measures what retrieval is
-actually buying, which is the honest way to defend any of this.
+Dense retrieval is an *addition*, not a replacement, because it has the opposite
+failure mode to the lexical rankers -- it will happily return something topically
+adjacent when the exact term was the whole point (an "annual" refund is not a
+"monthly" one). It also degrades gracefully: if the embedding call fails or no
+provider is configured, `self.dense` stays None and the lexical pair carries the
+retrieval on its own.
+
+The `no_retrieval` ablation measures what all of this is actually buying, which
+is the honest way to defend any of it.
 """
 from __future__ import annotations
 
@@ -141,24 +142,49 @@ def rrf(rankings: Sequence[Sequence[int]], k: int = 60) -> dict[int, float]:
     return fused
 
 
-class EmbeddingBackend:
-    """Interface a dense retriever would implement. Deliberately not implemented.
+def cosine(a: Sequence[float], b: Sequence[float]) -> float:
+    if not a or not b:
+        return 0.0
+    dot = sum(x * y for x, y in zip(a, b))
+    na = math.sqrt(sum(x * x for x in a)) or 1.0
+    nb = math.sqrt(sum(y * y for y in b)) or 1.0
+    return dot / (na * nb)
 
-    Documented rather than half-built so the trade-off in this module's docstring
-    is verifiable: swapping in dense retrieval means implementing `encode` and
-    adding one more ranking to the RRF fusion, nothing else.
+
+class DenseIndex:
+    """Embedding retrieval over the exemplar corpus.
+
+    This is the ranker that survives vocabulary mismatch: a customer writing
+    "single sign on" and a corpus saying "SAML SSO" share no tokens, so BM25 and
+    TF-IDF both score them near zero while cosine similarity does not. It is
+    added as a THIRD ranking in the RRF fusion rather than replacing the lexical
+    ones, because dense retrieval has the opposite failure mode -- it happily
+    returns something topically adjacent when the exact term was the point
+    (an "annual" refund vs a "monthly" one).
+
+    Built lazily and cached on disk, so it costs one embedding call per corpus
+    document once, then nothing.
     """
 
-    def encode(self, texts: Sequence[str]) -> list[list[float]]:
-        raise NotImplementedError("no embedding provider configured; see module docstring")
+    def __init__(self, keys: Sequence[str], vectors: Sequence[Sequence[float]]):
+        self.keys = list(keys)
+        self.vectors = [list(v) for v in vectors]
+
+    def scores(self, query_vec: Sequence[float]) -> list[float]:
+        return [cosine(query_vec, v) for v in self.vectors]
+
+    @property
+    def ready(self) -> bool:
+        return bool(self.vectors) and all(self.vectors)
 
 
 # ---------------------------------------------------------------------------
 class Retriever:
     """Retrieves exemplar (email, reply) pairs and grounding facts."""
 
-    def __init__(self, corpus: Sequence[Example]):
+    def __init__(self, corpus: Sequence[Example], dense: "DenseIndex | None" = None):
         self.corpus = list(corpus)
+        self.dense = dense
         docs = []
         for ex in self.corpus:
             # Field weighting: the subject is short and high-signal, so it is
@@ -174,19 +200,48 @@ class Retriever:
         self.fact_ids = [f.id for f in kb.PUBLIC_FACTS]
 
     # ------------------------------------------------------------- exemplars
-    def search(self, subject: str, body: str, k: int = 4) -> list[tuple[Example, float]]:
+    def search(
+        self, subject: str, body: str, k: int = 4, query_vec: Sequence[float] | None = None
+    ) -> list[tuple[Example, float]]:
         if not self.corpus:
             return []
         q = tokenize((subject + " ") * 3 + clean_for_index(body))
-        if not q:
+        if not q and query_vec is None:
             return []
-        b = self.bm25.scores(q)
-        c = self.cos.scores(q)
-        rank_b = sorted(range(len(b)), key=lambda i: -b[i])
-        rank_c = sorted(range(len(c)), key=lambda i: -c[i])
-        fused = rrf([rank_b, rank_c])
+        b = self.bm25.scores(q) if q else [0.0] * len(self.corpus)
+        c = self.cos.scores(q) if q else [0.0] * len(self.corpus)
+        rankings = [sorted(range(len(b)), key=lambda i: -b[i]),
+                    sorted(range(len(c)), key=lambda i: -c[i])]
+
+        d: list[float] | None = None
+        if query_vec is not None and self.dense and self.dense.ready:
+            d = self.dense.scores(query_vec)
+            rankings.append(sorted(range(len(d)), key=lambda i: -d[i]))
+
+        fused = rrf(rankings)
         best = sorted(fused.items(), key=lambda kv: -kv[1])[:k]
-        return [(self.corpus[i], s) for i, s in best if b[i] > 0 or c[i] > 0]
+        return [(self.corpus[i], s) for i, s in best
+                if b[i] > 0 or c[i] > 0 or (d is not None and d[i] > 0.3)]
+
+    async def build_dense(self, llm) -> None:
+        """Embed the corpus once. Safe to call repeatedly; cached on disk."""
+        if not self.corpus:
+            return
+        texts = [e.incoming.subject + "\n" + clean_for_index(e.incoming.body)
+                 for e in self.corpus]
+        try:
+            vecs = await llm.embed(texts)
+            self.dense = DenseIndex([e.id for e in self.corpus], vecs)
+        except Exception:  # noqa: BLE001 - dense is an enhancement, not a dependency
+            self.dense = None
+
+    async def embed_query(self, llm, subject: str, body: str):
+        if self.dense is None:
+            return None
+        try:
+            return (await llm.embed([subject + "\n" + clean_for_index(body)]))[0]
+        except Exception:  # noqa: BLE001
+            return None
 
     # ------------------------------------------------------------------ facts
     def facts(

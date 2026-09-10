@@ -23,7 +23,8 @@ from .generate.generator import SYSTEMS, SYSTEM_DESCRIPTIONS, generate_one
 from .generate.retrieve import Retriever
 from .schemas import Email, Example, Reply
 from .taxonomy import DIMENSIONS
-from .validate import perturb
+from .validate import agreement, perturb, reliability
+from .validate.human_labels import gold_labels, human_labels
 
 # legacy_windows=False stops rich falling back to a cp1252 writer, which
 # cannot encode non-ASCII and crashes the command outright.
@@ -116,6 +117,7 @@ def cmd_suggest(args: argparse.Namespace) -> None:
     async def go() -> None:
         async with LLM() as llm:
             r = Retriever(runner.corpus(examples))
+            await r.build_dense(llm)
             gen = await generate_one(llm, ex, r, args.system)
             con.rule("SUGGESTED REPLY  (" + args.system + ")")
             con.print(gen.reply.body)
@@ -291,6 +293,90 @@ def cmd_validate(args: argparse.Namespace) -> None:
     con.print("  [dim]" + s["headline"] + "[/]")
 
 
+# ------------------------------------------------------------- agreement
+def cmd_agreement(args: argparse.Namespace) -> None:
+    _warn_mock()
+    examples = load_dataset()
+    labels = human_labels() + gold_labels(examples)
+    out = RUNS_DIR / args.name
+    out.mkdir(parents=True, exist_ok=True)
+
+    async def go() -> dict:
+        async with LLM() as llm:
+            return await agreement.run(llm, examples, labels)
+
+    res = asyncio.run(go())
+    (out / "agreement.json").write_text(json.dumps(res, indent=2), encoding="utf-8")
+    if "error" in res:
+        con.print("[red]" + res["error"] + "[/]"); return
+
+    con.print("[bold]Judge vs human[/]  (n=" + str(res["n"]) + ", one annotator)")
+    con.print("  Spearman rho          " + format(res["spearman"], ".3f"))
+    con.print("  Kendall tau-b         " + format(res["kendall_tau"], ".3f"))
+    con.print("  Pairwise accuracy     " + format(res["pairwise"]["accuracy"], ".3f")
+              + "  over " + str(res["pairwise"]["pairs_compared"]) + " clearly-ranked pairs")
+    con.print("  Mean absolute error   " + format(res["mean_absolute_error"], ".3f"))
+
+    t2 = Table(title="Does the metric separate the bands a human assigned?")
+    t2.add_column("human band"); t2.add_column("mean composite", justify="right")
+    for band, val in res["metric_mean_by_human_band"].items():
+        t2.add_row(band, format(val, ".3f"))
+    con.print(t2)
+
+    t3 = Table(title="Which dimension tracks human judgement best?")
+    t3.add_column("dimension"); t3.add_column("Spearman vs human overall", justify="right")
+    for d, v in sorted(res["per_dimension_spearman_with_human_overall"].items(),
+                       key=lambda kv: -kv[1]):
+        t3.add_row(d, format(v, ".3f"))
+    con.print(t3)
+
+    wf = res["weight_fit"]
+    con.print("\n[bold]Weight fitting[/]")
+    con.print("  Spearman with hand-set priors : " + format(wf["spearman_with_default_weights"], ".3f"))
+    con.print("  Spearman with fitted weights  : " + format(wf["spearman_with_fitted_weights"], ".3f")
+              + "   (+" + format(wf["improvement"], ".3f") + ")")
+    con.print("  fitted: " + ", ".join(k + "=" + str(v) for k, v in wf["fitted_weights"].items()))
+    con.print("  [bold]" + wf["verdict"] + "[/]")
+    con.print("\n[dim]" + res["caveat"] + "[/]")
+
+
+# ----------------------------------------------------------- reliability
+def cmd_reliability(args: argparse.Namespace) -> None:
+    _warn_mock()
+    examples = load_dataset()
+    out = RUNS_DIR / args.name
+    records = runner.load_generations(out)
+    records = [r for r in records if r.system == args.system]
+
+    async def go() -> dict:
+        async with LLM() as llm:
+            sc = await reliability.self_consistency(llm, examples, records, k=args.k,
+                                                    limit=args.limit)
+            cm = await reliability.cross_model_judge(llm, examples, records, limit=args.limit)
+            return {"self_consistency": sc, "cross_model_judge": cm}
+
+    res = asyncio.run(go())
+    (out / "reliability.json").write_text(json.dumps(res, indent=2), encoding="utf-8")
+
+    sc, cm = res["self_consistency"], res["cross_model_judge"]
+    if "error" not in sc:
+        con.print("[bold]Judge self-consistency[/] (k=" + str(sc["k"]) + " @ temp "
+                  + str(sc["temperature"]) + ", " + str(sc["n_drafts"]) + " drafts)")
+        con.print("  mean SD across repeats : " + format(sc["mean_sd"], ".4f"))
+        con.print("  worst range            : " + format(sc["max_range"], ".4f"))
+        con.print("  [dim]" + sc["interpretation"] + "[/]")
+    if "error" not in cm:
+        con.print("\n[bold]Cross-model judge agreement[/] ("
+                  + cm["primary_judge"] + " vs " + cm["secondary_judge"] + ", n=" + str(cm["n"]) + ")")
+        con.print("  Spearman between judges : " + format(cm["spearman_between_judges"], ".3f"))
+        con.print("  mean shift              : " + format(cm["mean_shift"], "+.4f")
+                  + "   (" + format(cm["primary_mean"], ".3f") + " -> "
+                  + format(cm["secondary_mean"], ".3f") + ")")
+        con.print("  [dim]" + cm["interpretation"] + "[/]")
+    else:
+        con.print("\n[yellow]cross-model judge unavailable:[/] " + str(cm.get("error"))[:160])
+
+
 # ---------------------------------------------------------------- main
 def main() -> None:
     p = argparse.ArgumentParser(prog="replybench", description=__doc__)
@@ -324,10 +410,21 @@ def main() -> None:
     rep.add_argument("--name", default="latest")
     rep.set_defaults(func=cmd_report)
 
-    v = sub.add_parser("validate-metric", help="prove the metric measures what it claims")
+    v = sub.add_parser("validate-metric", help="inject known defects, check the right dimension moves")
     v.add_argument("--name", default="latest")
     v.add_argument("--n", type=int, default=5)
     v.set_defaults(func=cmd_validate)
+
+    ag = sub.add_parser("agreement", help="metric vs hand-assigned human labels; refits weights")
+    ag.add_argument("--name", default="latest")
+    ag.set_defaults(func=cmd_agreement)
+
+    rl = sub.add_parser("reliability", help="judge self-consistency + cross-model agreement")
+    rl.add_argument("--name", default="latest")
+    rl.add_argument("--system", default="main")
+    rl.add_argument("--k", type=int, default=3)
+    rl.add_argument("--limit", type=int, default=8)
+    rl.set_defaults(func=cmd_reliability)
 
     args = p.parse_args()
     args.func(args)

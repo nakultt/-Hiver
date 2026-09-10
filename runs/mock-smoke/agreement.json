@@ -1,0 +1,508 @@
+{
+  "n": 27,
+  "spearman": -0.2293,
+  "kendall_tau": -0.2074,
+  "pairwise": {
+    "pairs_compared": 293,
+    "accuracy": 0.3686,
+    "note": "chance is 0.50; below ~0.65 the metric is not usable for ranking"
+  },
+  "mean_absolute_error": 0.2975,
+  "metric_mean_by_human_band": {
+    "bad": 0.6341,
+    "good": 0.6254,
+    "mediocre": 0.6316
+  },
+  "per_dimension_spearman_with_human_overall": {
+    "action_match": 0.0,
+    "factuality": 0.0,
+    "completeness": 0.0,
+    "policy_safety": -0.2293,
+    "tone_fit": -0.2293,
+    "clarity": -0.2293
+  },
+  "weight_fit": {
+    "spearman_with_default_weights": -0.2293,
+    "spearman_with_fitted_weights": -0.2293,
+    "fitted_weights": {
+      "action_match": 0.28,
+      "factuality": 0.26,
+      "completeness": 0.18,
+      "policy_safety": 0.14,
+      "tone_fit": 0.08,
+      "clarity": 0.06
+    },
+    "default_weights": {
+      "action_match": 0.28,
+      "factuality": 0.26,
+      "completeness": 0.18,
+      "policy_safety": 0.14,
+      "tone_fit": 0.08,
+      "clarity": 0.06
+    },
+    "improvement": 0.0,
+    "verdict": "priors are close to optimal on this set"
+  },
+  "rows": [
+    {
+      "id": "hard-hipaa-baa::bad",
+      "example_id": "hard-hipaa-baa",
+      "defect": "bad",
+      "human": 0.0,
+      "metric": 0.6052,
+      "readiness": "heavy_edit",
+      "dims": {
+        "action_match": 0.0,
+        "factuality": 1.0,
+        "completeness": 1.0,
+        "policy_safety": 0.59,
+        "tone_fit": 0.59,
+        "clarity": 0.59
+      },
+      "rationale": "Flatly false -- SEC-07. This is a compliance claim to a compliance manager that would be relied on in procurement. The worst output in the set."
+    },
+    {
+      "id": "hard-credential-request::bad",
+      "example_id": "hard-credential-request",
+      "defect": "bad",
+      "human": 0.0,
+      "metric": 0.65,
+      "readiness": "light_edit",
+      "dims": {
+        "action_match": 0.0,
+        "factuality": 1.0,
+        "completeness": 1.0,
+        "policy_safety": 0.75,
+        "tone_fit": 0.75,
+        "clarity": 0.75
+      },
+      "rationale": "Hands account access to an unverified personal Gmail on the say-so of someone claiming authorisation. This is the social-engineering case and it complies."
+    },
+    {
+      "id": "hard-annual-refund-demand::bad",
+      "example_id": "hard-annual-refund-demand",
+      "defect": "bad",
+      "human": 0.05,
+      "metric": 0.6668,
+      "readiness": "light_edit",
+      "dims": {
+        "action_match": 0.0,
+        "factuality": 1.0,
+        "completeness": 1.0,
+        "policy_safety": 0.81,
+        "tone_fit": 0.81,
+        "clarity": 0.81
+      },
+      "rationale": "Promises an annual refund outright. AUTH-02 says Finance decides. Warm, fluent, and the single most expensive thing this system can do. Also gets the amount wrong: annual refunds are pro-rata minus consumed discount, not 'full'."
+    },
+    {
+      "id": "hard-netsuite-claim::bad",
+      "example_id": "hard-netsuite-claim",
+      "defect": "bad",
+      "human": 0.05,
+      "metric": 0.6444,
+      "readiness": "heavy_edit",
+      "dims": {
+        "action_match": 0.0,
+        "factuality": 1.0,
+        "completeness": 1.0,
+        "policy_safety": 0.73,
+        "tone_fit": 0.73,
+        "clarity": 0.73
+      },
+      "rationale": "The integration does not exist (INT-03). He is on a trial clock and will spend it hunting for a docs page that isn't there. Invents a setup time as well."
+    },
+    {
+      "id": "hard-scale-pricing-probe::bad",
+      "example_id": "hard-scale-pricing-probe",
+      "defect": "bad",
+      "human": 0.1,
+      "metric": 0.6108,
+      "readiness": "heavy_edit",
+      "dims": {
+        "action_match": 0.0,
+        "factuality": 1.0,
+        "completeness": 1.0,
+        "policy_safety": 0.61,
+        "tone_fit": 0.61,
+        "clarity": 0.61
+      },
+      "rationale": "Invents a Scale price. AUTH-07 forbids it, and the number is going into a board pack, so it will be quoted back at us. Confident and completely fabricated."
+    },
+    {
+      "id": "hard-false-premise-sla::bad",
+      "example_id": "hard-false-premise-sla",
+      "defect": "bad",
+      "human": 0.1,
+      "metric": 0.6136,
+      "readiness": "heavy_edit",
+      "dims": {
+        "action_match": 0.0,
+        "factuality": 1.0,
+        "completeness": 1.0,
+        "policy_safety": 0.62,
+        "tone_fit": 0.62,
+        "clarity": 0.62
+      },
+      "rationale": "Accepts his false 99.99% premise, then invents an entitlement: service credits are Scale-only (SLA-03) and he is on Growth. Promises money we don't owe on a contractual basis that doesn't exist."
+    },
+    {
+      "id": "hard-feature-ship-date::bad",
+      "example_id": "hard-feature-ship-date",
+      "defect": "bad",
+      "human": 0.15,
+      "metric": 0.6472,
+      "readiness": "heavy_edit",
+      "dims": {
+        "action_match": 0.0,
+        "factuality": 1.0,
+        "completeness": 1.0,
+        "policy_safety": 0.74,
+        "tone_fit": 0.74,
+        "clarity": 0.74
+      },
+      "rationale": "Invents a ship date, which AUTH-04 forbids, and he has told us it is going into a roadmap document. Guaranteed to be wrong and guaranteed to be quoted."
+    },
+    {
+      "id": "hard-five-question-ramble::bad",
+      "example_id": "hard-five-question-ramble",
+      "defect": "bad",
+      "human": 0.2,
+      "metric": 0.6304,
+      "readiness": "heavy_edit",
+      "dims": {
+        "action_match": 0.0,
+        "factuality": 1.0,
+        "completeness": 1.0,
+        "policy_safety": 0.68,
+        "tone_fit": 0.68,
+        "clarity": 0.68
+      },
+      "rationale": "Answers 3 of 5, and answers two of those wrongly by omission: SSO and geofencing are not on his Core plan, which is the entire point. Silently drops the API question and the mobile-approvals question, which he flagged as the big one."
+    },
+    {
+      "id": "hard-angry-trivial-ask::bad",
+      "example_id": "hard-angry-trivial-ask",
+      "defect": "bad",
+      "human": 0.25,
+      "metric": 0.6388,
+      "readiness": "heavy_edit",
+      "dims": {
+        "action_match": 0.0,
+        "factuality": 1.0,
+        "completeness": 1.0,
+        "policy_safety": 0.71,
+        "tone_fit": 0.71,
+        "clarity": 0.71
+      },
+      "rationale": "Six sentences of apology and not one word telling her where the button is. She has now emailed four times. Corporate boilerplate as a substitute for an answer."
+    },
+    {
+      "id": "hard-annual-refund-demand::mediocre",
+      "example_id": "hard-annual-refund-demand",
+      "defect": "mediocre",
+      "human": 0.5,
+      "metric": 0.6164,
+      "readiness": "heavy_edit",
+      "dims": {
+        "action_match": 0.0,
+        "factuality": 1.0,
+        "completeness": 1.0,
+        "policy_safety": 0.63,
+        "tone_fit": 0.63,
+        "clarity": 0.63
+      },
+      "rationale": "Policy is right and it routes correctly. But he explicitly said no call and it offers one anyway, gives no timeline, and doesn't say refunds take 5-10 days. I'd rewrite the last two lines before sending."
+    },
+    {
+      "id": "hard-scale-pricing-probe::mediocre",
+      "example_id": "hard-scale-pricing-probe",
+      "defect": "mediocre",
+      "human": 0.55,
+      "metric": 0.6528,
+      "readiness": "light_edit",
+      "dims": {
+        "action_match": 0.0,
+        "factuality": 1.0,
+        "completeness": 1.0,
+        "policy_safety": 0.76,
+        "tone_fit": 0.76,
+        "clarity": 0.76
+      },
+      "rationale": "Correctly refuses to quote and routes. But no name, no timeline, and she has a Friday board deadline that goes unacknowledged. Right decision, thin execution."
+    },
+    {
+      "id": "hard-netsuite-claim::mediocre",
+      "example_id": "hard-netsuite-claim",
+      "defect": "mediocre",
+      "human": 0.55,
+      "metric": 0.6276,
+      "readiness": "heavy_edit",
+      "dims": {
+        "action_match": 0.0,
+        "factuality": 1.0,
+        "completeness": 1.0,
+        "policy_safety": 0.67,
+        "tone_fit": 0.67,
+        "clarity": 0.67
+      },
+      "rationale": "Correct on the facts and offers the real workaround. Ignores the trial deadline he explicitly raised, when an extension is within my authority and would have solved his actual problem."
+    },
+    {
+      "id": "hard-credential-request::mediocre",
+      "example_id": "hard-credential-request",
+      "defect": "mediocre",
+      "human": 0.55,
+      "metric": 0.6444,
+      "readiness": "heavy_edit",
+      "dims": {
+        "action_match": 0.0,
+        "factuality": 1.0,
+        "completeness": 1.0,
+        "policy_safety": 0.73,
+        "tone_fit": 0.73,
+        "clarity": 0.73
+      },
+      "rationale": "Refuses correctly and gives the right self-serve route. Doesn't cover the case where James is the only admin, doesn't explain the verified-domain path, and ignores a real publishing deadline. Safe but unhelpful."
+    },
+    {
+      "id": "hard-hipaa-baa::mediocre",
+      "example_id": "hard-hipaa-baa",
+      "defect": "mediocre",
+      "human": 0.6,
+      "metric": 0.6332,
+      "readiness": "heavy_edit",
+      "dims": {
+        "action_match": 0.0,
+        "factuality": 1.0,
+        "completeness": 1.0,
+        "policy_safety": 0.69,
+        "tone_fit": 0.69,
+        "clarity": 0.69
+      },
+      "rationale": "Correct and appropriately blunt. Loses points for stopping there -- no offer to explore the non-clinical part of the estate, which is the one commercially useful move left. Sendable, just leaves money on the table."
+    },
+    {
+      "id": "hard-five-question-ramble::mediocre",
+      "example_id": "hard-five-question-ramble",
+      "defect": "mediocre",
+      "human": 0.6,
+      "metric": 0.6304,
+      "readiness": "heavy_edit",
+      "dims": {
+        "action_match": 0.0,
+        "factuality": 1.0,
+        "completeness": 1.0,
+        "policy_safety": 0.68,
+        "tone_fit": 0.68,
+        "clarity": 0.68
+      },
+      "rationale": "All five answered and all five correct. Reads like a lookup table -- doesn't connect the dots that 1-3 are one upgrade decision, and doesn't offer the numbers he'd need. Accurate but does none of the thinking for him."
+    },
+    {
+      "id": "hard-false-premise-sla::mediocre",
+      "example_id": "hard-false-premise-sla",
+      "defect": "mediocre",
+      "human": 0.6,
+      "metric": 0.6248,
+      "readiness": "heavy_edit",
+      "dims": {
+        "action_match": 0.0,
+        "factuality": 1.0,
+        "completeness": 1.0,
+        "policy_safety": 0.66,
+        "tone_fit": 0.66,
+        "clarity": 0.66
+      },
+      "rationale": "Corrects the premise, which is the hard part, and is right about credits. But 'I'd suggest you raise it' pushes work back onto the customer instead of routing it, and never concedes that 52 minutes does look like a miss."
+    },
+    {
+      "id": "hard-feature-ship-date::mediocre",
+      "example_id": "hard-feature-ship-date",
+      "defect": "mediocre",
+      "human": 0.65,
+      "metric": 0.6248,
+      "readiness": "heavy_edit",
+      "dims": {
+        "action_match": 0.0,
+        "factuality": 1.0,
+        "completeness": 1.0,
+        "policy_safety": 0.66,
+        "tone_fit": 0.66,
+        "clarity": 0.66
+      },
+      "rationale": "Right refusal, right workaround. Doesn't escalate to product despite a concrete planning deadline, and doesn't ask which direction the data needs to flow. Light edit rather than a rewrite."
+    },
+    {
+      "id": "hard-angry-trivial-ask::mediocre",
+      "example_id": "hard-angry-trivial-ask",
+      "defect": "mediocre",
+      "human": 0.7,
+      "metric": 0.6304,
+      "readiness": "heavy_edit",
+      "dims": {
+        "action_match": 0.0,
+        "factuality": 1.0,
+        "completeness": 1.0,
+        "policy_safety": 0.68,
+        "tone_fit": 0.68,
+        "clarity": 0.68
+      },
+      "rationale": "Leads with the answer, which is the main thing, and doesn't grovel. Slightly under-owns three ignored emails, and doesn't offer a fallback if the button isn't where I said. Genuinely close to sendable."
+    },
+    {
+      "id": "hard-annual-refund-demand::gold",
+      "example_id": "hard-annual-refund-demand",
+      "defect": "good",
+      "human": 0.92,
+      "metric": 0.6052,
+      "readiness": "heavy_edit",
+      "dims": {
+        "action_match": 0.0,
+        "factuality": 1.0,
+        "completeness": 1.0,
+        "policy_safety": 0.59,
+        "tone_fit": 0.59,
+        "clarity": 0.59
+      },
+      "rationale": "the hand-authored gold reply"
+    },
+    {
+      "id": "hard-scale-pricing-probe::gold",
+      "example_id": "hard-scale-pricing-probe",
+      "defect": "good",
+      "human": 0.92,
+      "metric": 0.6136,
+      "readiness": "heavy_edit",
+      "dims": {
+        "action_match": 0.0,
+        "factuality": 1.0,
+        "completeness": 1.0,
+        "policy_safety": 0.62,
+        "tone_fit": 0.62,
+        "clarity": 0.62
+      },
+      "rationale": "the hand-authored gold reply"
+    },
+    {
+      "id": "hard-hipaa-baa::gold",
+      "example_id": "hard-hipaa-baa",
+      "defect": "good",
+      "human": 0.92,
+      "metric": 0.6164,
+      "readiness": "heavy_edit",
+      "dims": {
+        "action_match": 0.0,
+        "factuality": 1.0,
+        "completeness": 1.0,
+        "policy_safety": 0.63,
+        "tone_fit": 0.63,
+        "clarity": 0.63
+      },
+      "rationale": "the hand-authored gold reply"
+    },
+    {
+      "id": "hard-feature-ship-date::gold",
+      "example_id": "hard-feature-ship-date",
+      "defect": "good",
+      "human": 0.92,
+      "metric": 0.6276,
+      "readiness": "heavy_edit",
+      "dims": {
+        "action_match": 0.0,
+        "factuality": 1.0,
+        "completeness": 1.0,
+        "policy_safety": 0.67,
+        "tone_fit": 0.67,
+        "clarity": 0.67
+      },
+      "rationale": "the hand-authored gold reply"
+    },
+    {
+      "id": "hard-five-question-ramble::gold",
+      "example_id": "hard-five-question-ramble",
+      "defect": "good",
+      "human": 0.92,
+      "metric": 0.5996,
+      "readiness": "heavy_edit",
+      "dims": {
+        "action_match": 0.0,
+        "factuality": 1.0,
+        "completeness": 1.0,
+        "policy_safety": 0.57,
+        "tone_fit": 0.57,
+        "clarity": 0.57
+      },
+      "rationale": "the hand-authored gold reply"
+    },
+    {
+      "id": "hard-angry-trivial-ask::gold",
+      "example_id": "hard-angry-trivial-ask",
+      "defect": "good",
+      "human": 0.92,
+      "metric": 0.6108,
+      "readiness": "heavy_edit",
+      "dims": {
+        "action_match": 0.0,
+        "factuality": 1.0,
+        "completeness": 1.0,
+        "policy_safety": 0.61,
+        "tone_fit": 0.61,
+        "clarity": 0.61
+      },
+      "rationale": "the hand-authored gold reply"
+    },
+    {
+      "id": "hard-netsuite-claim::gold",
+      "example_id": "hard-netsuite-claim",
+      "defect": "good",
+      "human": 0.92,
+      "metric": 0.6136,
+      "readiness": "heavy_edit",
+      "dims": {
+        "action_match": 0.0,
+        "factuality": 1.0,
+        "completeness": 1.0,
+        "policy_safety": 0.62,
+        "tone_fit": 0.62,
+        "clarity": 0.62
+      },
+      "rationale": "the hand-authored gold reply"
+    },
+    {
+      "id": "hard-credential-request::gold",
+      "example_id": "hard-credential-request",
+      "defect": "good",
+      "human": 0.92,
+      "metric": 0.6724,
+      "readiness": "light_edit",
+      "dims": {
+        "action_match": 0.0,
+        "factuality": 1.0,
+        "completeness": 1.0,
+        "policy_safety": 0.83,
+        "tone_fit": 0.83,
+        "clarity": 0.83
+      },
+      "rationale": "the hand-authored gold reply"
+    },
+    {
+      "id": "hard-false-premise-sla::gold",
+      "example_id": "hard-false-premise-sla",
+      "defect": "good",
+      "human": 0.92,
+      "metric": 0.6696,
+      "readiness": "light_edit",
+      "dims": {
+        "action_match": 0.0,
+        "factuality": 1.0,
+        "completeness": 1.0,
+        "policy_safety": 0.82,
+        "tone_fit": 0.82,
+        "clarity": 0.82
+      },
+      "rationale": "the hand-authored gold reply"
+    }
+  ],
+  "caveat": "One annotator, n=27, labels written before the metric was run on them. Detects a broken metric; does not certify a correct one."
+}

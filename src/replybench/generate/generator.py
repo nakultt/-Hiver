@@ -150,7 +150,8 @@ async def generate_one(
         )
 
     if system == "nearest_neighbour":
-        hits = retriever.search(inc.subject, inc.body, k=1)
+        qv = await retriever.embed_query(llm, inc.subject, inc.body)
+        hits = retriever.search(inc.subject, inc.body, k=1, query_vec=qv)
         body = hits[0][0].reply.body if hits else TEMPLATE_REPLY
         return GenerationRecord(
             example_id=example.id, system=system,
@@ -163,7 +164,8 @@ async def generate_one(
     use_exemplars = system in ("main", "no_kb")
     use_facts = system in ("main", "no_retrieval")
 
-    hits = retriever.search(inc.subject, inc.body, k=k) if use_exemplars else []
+    qv = await retriever.embed_query(llm, inc.subject, inc.body) if use_exemplars else None
+    hits = retriever.search(inc.subject, inc.body, k=k, query_vec=qv) if use_exemplars else []
     facts = retriever.facts(inc.subject, inc.body, [e for e, _ in hits]) if use_facts else []
 
     facts_block = FACTS_BLOCK.format(facts=kb.render(facts)) if use_facts else ""

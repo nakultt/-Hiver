@@ -240,6 +240,64 @@ class LLM:
                 delay = min(delay * 1.6, 45.0)
         raise LLMError("call failed after retries: " + str(last))
 
+    async def embed(self, texts: Sequence[str], *, model: str | None = None) -> list[list[float]]:
+        """Embed a batch of texts. Cached per-text so partial reuse works.
+
+        Cached individually rather than per-batch: retrieval re-embeds the same
+        corpus on every run but a different query each time, and a batch-level
+        cache key would miss every time the query changed.
+        """
+        model = model or self.s.embed_model
+        out: list[list[float]] = [[] for _ in texts]
+        todo: list[int] = []
+        for i, t in enumerate(texts):
+            path = self._cache_path({"model": model, "embed": t, "__backend": self.s.backend})
+            if self.s.cache and path.exists():
+                self.usage.cache_hits += 1
+                out[i] = json.loads(path.read_text(encoding="utf-8"))["v"]
+            else:
+                todo.append(i)
+
+        for start in range(0, len(todo), 32):
+            chunk = todo[start : start + 32]
+            payload = {"model": model, "input": [texts[i] for i in chunk]}
+            if not self.s.live:
+                vecs = [_mock_embedding(texts[i]) for i in chunk]
+            else:
+                self._charge(model)
+                vecs = await self._post_embed(payload)
+            for i, v in zip(chunk, vecs):
+                out[i] = v
+                if self.s.cache:
+                    self._cache_path({"model": model, "embed": texts[i],
+                                      "__backend": self.s.backend}).write_text(
+                        json.dumps({"v": v}), encoding="utf-8")
+        return out
+
+    async def _post_embed(self, payload: dict[str, Any]) -> list[list[float]]:
+        assert self._client is not None, "use: async with LLM() as llm"
+        delay = 2.0
+        last: Exception | None = None
+        for attempt in range(8):
+            try:
+                await self._pace()
+                async with self._sem:
+                    r = await self._client.post("embeddings", json=payload)
+                if r.status_code in (429, 500, 502, 503, 504):
+                    hint = _retry_after(r.text)
+                    if hint:
+                        await asyncio.sleep(min(hint + 1.0, 65.0))
+                    raise LLMError("HTTP " + str(r.status_code) + ": " + r.text[:160])
+                r.raise_for_status()
+                return [d["embedding"] for d in r.json()["data"]]
+            except Exception as exc:  # noqa: BLE001
+                last = exc
+                if attempt == 7:
+                    break
+                await asyncio.sleep(delay)
+                delay = min(delay * 1.6, 45.0)
+        raise LLMError("embed failed after retries: " + str(last))
+
     async def structured(
         self,
         messages: Sequence[dict[str, str]],
@@ -306,6 +364,22 @@ async def gather_capped(coros: Sequence[Any], *, desc: str = "", quiet: bool = F
 
     await asyncio.gather(*(run(i, c) for i, c in enumerate(coros)))
     return results
+
+
+def _mock_embedding(text: str, dim: int = 256) -> list[float]:
+    """Deterministic hashed bag-of-words vector for offline runs.
+
+    Not semantic, but it is stable and gives similar text similar vectors, which
+    is enough for the plumbing and the tests to exercise the dense path.
+    """
+    import math
+    import re as _re
+
+    v = [0.0] * dim
+    for w in _re.findall(r"[a-z0-9]+", text.lower()):
+        v[int(hashlib.md5(w.encode()).hexdigest(), 16) % dim] += 1.0
+    n = math.sqrt(sum(x * x for x in v)) or 1.0
+    return [x / n for x in v]
 
 
 def _mock_response(messages: Sequence[dict[str, str]], *, json_mode: bool, variant: int) -> str:

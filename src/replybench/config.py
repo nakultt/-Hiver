@@ -27,6 +27,7 @@ class Settings:
     judge_model: str
     data_model: str
     strong_model: str
+    embed_model: str
     concurrency: int
     backend: str          # "api" | "mock"
     cache: bool
@@ -53,6 +54,7 @@ def load_settings() -> Settings:
         judge_model=os.getenv("JUDGE_MODEL", "gemini-2.5-flash-lite"),
         data_model=os.getenv("DATA_MODEL", "gemini-2.5-flash-lite"),
         strong_model=os.getenv("STRONG_MODEL", "gemini-2.5-flash"),
+        embed_model=os.getenv("EMBED_MODEL", "gemini-embedding-001"),
         concurrency=int(os.getenv("LLM_CONCURRENCY", "8")),
         backend=backend,
         cache=os.getenv("LLM_CACHE", "1") not in ("0", "false", "False"),

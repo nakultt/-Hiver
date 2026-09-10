@@ -34,6 +34,8 @@ async def generate_all(
     limit: int | None = None,
 ) -> list[GenerationRecord]:
     retriever = Retriever(corpus(examples))
+    # Embed the exemplar corpus once up front; cached on disk thereafter.
+    await retriever.build_dense(llm)
     targets = eval_set(examples)[:limit] if limit else eval_set(examples)
     by_id = {e.id: e for e in targets}
 
