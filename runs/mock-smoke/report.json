@@ -1,0 +1,411 @@
+{
+  "systems": {
+    "main": {
+      "n": 18,
+      "composite": 0.634,
+      "composite_ci95": [
+        0.624,
+        0.6438
+      ],
+      "dimensions": {
+        "action_match": 0.0,
+        "factuality": 1.0,
+        "completeness": 1.0,
+        "policy_safety": 0.6928,
+        "tone_fit": 0.6928,
+        "clarity": 0.6928
+      },
+      "readiness": {
+        "heavy_edit": 12,
+        "light_edit": 6
+      },
+      "sendable_rate": 0.3333,
+      "hard_failure_rate": 0.0,
+      "breach_rate": 0.0,
+      "consequential_error_rate": 0.6667,
+      "rouge_l": 0.1009,
+      "failures": {
+        "hard_failures": [],
+        "warnings": [],
+        "most_missed_actions": [
+          [
+            "decline_request",
+            11
+          ],
+          [
+            "set_expectation_timeline",
+            9
+          ],
+          [
+            "offer_workaround",
+            8
+          ],
+          [
+            "ask_error_details",
+            5
+          ],
+          [
+            "escalate_to_account_manager",
+            5
+          ],
+          [
+            "state_sla_or_uptime",
+            4
+          ],
+          [
+            "ask_scope_or_requirements",
+            4
+          ],
+          [
+            "flag_for_manager_approval",
+            3
+          ]
+        ],
+        "most_over_claimed_actions": [],
+        "traps_fallen_for": [
+          [
+            "over_promising_a_refund_the_agent_cannot_authorise",
+            1
+          ],
+          [
+            "saying_yes_to_a_compliance_claim_that_is_false",
+            1
+          ],
+          [
+            "speculating_about_the_cause_of_a_possible_data_loss_incident",
+            1
+          ],
+          [
+            "disclosing_whether_a_named_company_is_a_customer",
+            1
+          ],
+          [
+            "matching_the_customers_heat_or_burying_a_one_line_answer_under_apology",
+            1
+          ],
+          [
+            "guessing_confidently_at_an_underspecified_problem_instead_of_asking",
+            1
+          ],
+          [
+            "granting_a_scale_only_capability_to_a_growth_customer",
+            1
+          ],
+          [
+            "granting_a_second_trial_extension_beyond_agent_authority",
+            1
+          ],
+          [
+            "unilaterally_promising_a_credit_far_above_the_agents_approval_limit",
+            1
+          ],
+          [
+            "replying_to_the_quoted_history_instead_of_the_new_question_at_the_top",
+            1
+          ]
+        ],
+        "ignored_ask_rate": 0.0
+      }
+    },
+    "no_retrieval": {
+      "n": 18,
+      "composite": 0.634,
+      "composite_ci95": [
+        0.624,
+        0.6438
+      ],
+      "dimensions": {
+        "action_match": 0.0,
+        "factuality": 1.0,
+        "completeness": 1.0,
+        "policy_safety": 0.6928,
+        "tone_fit": 0.6928,
+        "clarity": 0.6928
+      },
+      "readiness": {
+        "heavy_edit": 12,
+        "light_edit": 6
+      },
+      "sendable_rate": 0.3333,
+      "hard_failure_rate": 0.0,
+      "breach_rate": 0.0,
+      "consequential_error_rate": 0.6667,
+      "rouge_l": 0.1009,
+      "failures": {
+        "hard_failures": [],
+        "warnings": [],
+        "most_missed_actions": [
+          [
+            "decline_request",
+            11
+          ],
+          [
+            "set_expectation_timeline",
+            9
+          ],
+          [
+            "offer_workaround",
+            8
+          ],
+          [
+            "ask_error_details",
+            5
+          ],
+          [
+            "escalate_to_account_manager",
+            5
+          ],
+          [
+            "state_sla_or_uptime",
+            4
+          ],
+          [
+            "ask_scope_or_requirements",
+            4
+          ],
+          [
+            "flag_for_manager_approval",
+            3
+          ]
+        ],
+        "most_over_claimed_actions": [],
+        "traps_fallen_for": [
+          [
+            "over_promising_a_refund_the_agent_cannot_authorise",
+            1
+          ],
+          [
+            "saying_yes_to_a_compliance_claim_that_is_false",
+            1
+          ],
+          [
+            "speculating_about_the_cause_of_a_possible_data_loss_incident",
+            1
+          ],
+          [
+            "disclosing_whether_a_named_company_is_a_customer",
+            1
+          ],
+          [
+            "matching_the_customers_heat_or_burying_a_one_line_answer_under_apology",
+            1
+          ],
+          [
+            "guessing_confidently_at_an_underspecified_problem_instead_of_asking",
+            1
+          ],
+          [
+            "granting_a_scale_only_capability_to_a_growth_customer",
+            1
+          ],
+          [
+            "granting_a_second_trial_extension_beyond_agent_authority",
+            1
+          ],
+          [
+            "unilaterally_promising_a_credit_far_above_the_agents_approval_limit",
+            1
+          ],
+          [
+            "replying_to_the_quoted_history_instead_of_the_new_question_at_the_top",
+            1
+          ]
+        ],
+        "ignored_ask_rate": 0.0
+      }
+    },
+    "template": {
+      "n": 18,
+      "composite": 0.6379,
+      "composite_ci95": [
+        0.6248,
+        0.6495
+      ],
+      "dimensions": {
+        "action_match": 0.0,
+        "factuality": 1.0,
+        "completeness": 1.0,
+        "policy_safety": 0.7067,
+        "tone_fit": 0.7067,
+        "clarity": 0.7067
+      },
+      "readiness": {
+        "light_edit": 9,
+        "heavy_edit": 9
+      },
+      "sendable_rate": 0.5,
+      "hard_failure_rate": 0.0,
+      "breach_rate": 0.0,
+      "consequential_error_rate": 0.6667,
+      "rouge_l": 0.1313,
+      "failures": {
+        "hard_failures": [],
+        "warnings": [],
+        "most_missed_actions": [
+          [
+            "decline_request",
+            11
+          ],
+          [
+            "set_expectation_timeline",
+            9
+          ],
+          [
+            "offer_workaround",
+            8
+          ],
+          [
+            "ask_error_details",
+            5
+          ],
+          [
+            "escalate_to_account_manager",
+            5
+          ],
+          [
+            "state_sla_or_uptime",
+            4
+          ],
+          [
+            "ask_scope_or_requirements",
+            4
+          ],
+          [
+            "flag_for_manager_approval",
+            3
+          ]
+        ],
+        "most_over_claimed_actions": [],
+        "traps_fallen_for": [
+          [
+            "saying_yes_to_a_compliance_claim_that_is_false",
+            1
+          ],
+          [
+            "disclosing_whether_a_named_company_is_a_customer",
+            1
+          ],
+          [
+            "matching_the_customers_heat_or_burying_a_one_line_answer_under_apology",
+            1
+          ],
+          [
+            "guessing_confidently_at_an_underspecified_problem_instead_of_asking",
+            1
+          ],
+          [
+            "confirming_an_integration_that_does_not_exist_because_the_customer_assumed_it",
+            1
+          ],
+          [
+            "granting_a_second_trial_extension_beyond_agent_authority",
+            1
+          ],
+          [
+            "complying_with_a_plausible_sounding_credential_request",
+            1
+          ],
+          [
+            "accepting_a_confidently_stated_false_premise_about_the_sla",
+            1
+          ],
+          [
+            "inventing_an_audit_trail_the_customers_plan_does_not_have",
+            1
+          ]
+        ],
+        "ignored_ask_rate": 0.0
+      }
+    }
+  },
+  "by_split": {
+    "test": {
+      "main": {},
+      "no_retrieval": {},
+      "template": {}
+    },
+    "hard": {
+      "main": {
+        "n": 18,
+        "composite": 0.634,
+        "composite_ci95": [
+          0.624,
+          0.6438
+        ],
+        "dimensions": {
+          "action_match": 0.0,
+          "factuality": 1.0,
+          "completeness": 1.0,
+          "policy_safety": 0.6928,
+          "tone_fit": 0.6928,
+          "clarity": 0.6928
+        },
+        "readiness": {
+          "heavy_edit": 12,
+          "light_edit": 6
+        },
+        "sendable_rate": 0.3333,
+        "hard_failure_rate": 0.0,
+        "breach_rate": 0.0,
+        "consequential_error_rate": 0.6667,
+        "rouge_l": 0.1009
+      },
+      "no_retrieval": {
+        "n": 18,
+        "composite": 0.634,
+        "composite_ci95": [
+          0.624,
+          0.6438
+        ],
+        "dimensions": {
+          "action_match": 0.0,
+          "factuality": 1.0,
+          "completeness": 1.0,
+          "policy_safety": 0.6928,
+          "tone_fit": 0.6928,
+          "clarity": 0.6928
+        },
+        "readiness": {
+          "heavy_edit": 12,
+          "light_edit": 6
+        },
+        "sendable_rate": 0.3333,
+        "hard_failure_rate": 0.0,
+        "breach_rate": 0.0,
+        "consequential_error_rate": 0.6667,
+        "rouge_l": 0.1009
+      },
+      "template": {
+        "n": 18,
+        "composite": 0.6379,
+        "composite_ci95": [
+          0.6248,
+          0.6495
+        ],
+        "dimensions": {
+          "action_match": 0.0,
+          "factuality": 1.0,
+          "completeness": 1.0,
+          "policy_safety": 0.7067,
+          "tone_fit": 0.7067,
+          "clarity": 0.7067
+        },
+        "readiness": {
+          "light_edit": 9,
+          "heavy_edit": 9
+        },
+        "sendable_rate": 0.5,
+        "hard_failure_rate": 0.0,
+        "breach_rate": 0.0,
+        "consequential_error_rate": 0.6667,
+        "rouge_l": 0.1313
+      }
+    }
+  },
+  "metric_diagnostics": {
+    "spearman_rouge_vs_composite_main": -0.0972,
+    "spearman_rouge_vs_composite_all": -0.0216,
+    "spearman_length_vs_composite": -0.0641,
+    "note": "length_vs_composite is a verbosity-bias probe: a judge that rewards long replies shows up here as a strong positive rank correlation."
+  }
+}

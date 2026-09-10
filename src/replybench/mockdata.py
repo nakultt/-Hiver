@@ -56,6 +56,41 @@ def mock_for(prompt: str, *, json_mode: bool, variant: int = 0) -> str:
             "would_send": "light_edit", "biggest_problem": "mock",
         })
 
+    if "You draft the suggested reply" in p:
+        return json.dumps({
+            "body": "\n\n".join([
+                "Hi there,",
+                "This is offline mock output - no API key was used, so it says nothing "
+                "about your account. Refunds on monthly plans are within 30 days.",
+                "Priya Raman\nKestrel Support",
+            ]),
+            "intent": "answer_question",
+            "actions": ["state_refund_policy", "set_expectation_timeline"],
+            "cited_facts": ["REF-01"], "confidence": 0.4,
+            "needs_human_review": True, "open_questions": [],
+        })
+
+    if "You audit a draft support reply" in p:
+        return json.dumps({
+            "intent": "answer_question",
+            "actions": ["state_refund_policy", "set_expectation_timeline"],
+            "claims": [{"claim": "Refunds on monthly plans are within 30 days.",
+                        "verdict": "supported", "source_id": "REF-01", "note": "mock"}],
+            "asks": [{"ask": "mock ask", "status": "answered", "evidence": "mock"}],
+            "breaches": [],
+        })
+
+    if "You review draft replies" in p:
+        base = 0.55 + (_h(p + str(variant), 30) / 100.0)
+        def dim(label):
+            return {"score": round(min(1.0, base), 3), "reason": "mock " + label,
+                    "evidence": ["mock evidence"]}
+        return json.dumps({
+            "tone_fit": dim("tone"), "clarity": dim("clarity"),
+            "policy_safety": dim("policy"), "holistic": dim("holistic"),
+            "would_send": "light_edit", "biggest_problem": "mock run - not a real judgement",
+        })
+
     if json_mode:
         return json.dumps({"mock": True, "variant": variant})
 

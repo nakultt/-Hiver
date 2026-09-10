@@ -337,7 +337,64 @@ email. If the metric gets that ordering wrong, the metric is wrong.
 
 ## 5. Results
 
-<!-- RESULTS -->
+### What is committed
+
+**Honest status: the metric system is complete and runs end-to-end; the live scored run
+is not committed, because the free-tier key ran out of quota mid-build.**
+
+- `data/dataset.jsonl` — the **18 hand-authored adversarial cases**, complete with gold
+  replies, gold action labels, extracted asks, key fact IDs and named traps. These need
+  no API key: they are authored in `dataset/handwritten.py` and exported verbatim.
+- `runs/mock-smoke/` — a full pipeline run (generate -> audit -> judge -> score ->
+  aggregate) over all 18 cases for 3 systems, produced with `LLM_BACKEND=mock`. It
+  proves the plumbing end to end and shows the exact report shape. **Its numbers are
+  filler by construction** — the mock backend returns constants — and the CLI prints a
+  yellow warning saying so on every command.
+- `pytest` — 27 tests, all passing, no API key required. They cover the parts where a
+  silent bug would corrupt every score: action-F1 edge cases, the contradicted-vs-
+  unsupported ordering, deferral counting as coverage, quote stripping, and the numeric
+  hallucination detector.
+
+### The quota story, in full
+
+The key provided was free-tier. `gemini-2.5-pro` is hard-blocked (`limit: 0`), and
+`gemini-2.5-flash-lite` allows **20 requests per rolling minute**. The synthetic corpus
+build needs 5 calls per row; the scored run needs 2 more per (example × system); the
+validation suite needs 2 per perturbation case. That is ~1,000 requests, or roughly an
+hour of wall clock at 20/min — more than the time available. I added a token-bucket
+rate limiter and a per-model budget guard rather than thrash on retries, but the clock
+won.
+
+To produce the live numbers:
+
+```bash
+replybench build-dataset --train 60 --test 16   # ~6 min at 20 req/min
+replybench run                                  # all 5 systems
+replybench report
+replybench validate-metric
+```
+
+Every LLM call is content-addressed and cached to `.cache/`, so an interrupted run
+resumes for free and a repeated run is byte-identical.
+
+### One real finding, from the tests rather than a run
+
+`tests/test_core.py` encodes the claim this whole design rests on, and it passes:
+
+| | ROUGE-L |
+|---|---|
+| gold reply vs. a **correct paraphrase** of it | **< 0.50** |
+| gold reply vs. the **same sentence with 30 days changed to 90** | **> 0.90** |
+
+A surface-overlap metric scores the *wrong* reply nearly twice as well as the *right*
+one. That is the entire argument for `action_match` + `factuality`, and it is a
+passing test in this repo rather than a claim in this README.
+
+A second one, found and fixed during the build: the numeric hallucination detector
+originally used prefix matching, which let `99.99%` validate against the KB's `99.9`
+and `60 days` against `600 requests/minute` — silently passing exactly the errors it
+existed to catch. `test_numeric_hallucination_detected` now pins the exact-match
+behaviour.
 
 ---
 

@@ -1,0 +1,14 @@
+{
+  "usage": {
+    "calls": 0,
+    "cache_hits": 0,
+    "prompt_tokens": 0,
+    "completion_tokens": 0,
+    "by_model": {}
+  },
+  "live_requests": {},
+  "models": {
+    "gen": "gemini-2.5-flash-lite",
+    "judge": "gemini-2.5-flash-lite"
+  }
+}

@@ -3,7 +3,17 @@ from __future__ import annotations
 
 import random
 from collections import Counter
-from statistics import mean
+from statistics import mean as _mean
+
+
+def mean(vals):
+    """Mean that returns 0.0 for an empty sequence.
+
+    Failed generations legitimately produce empty dimension lists, and a
+    reporting crash is a worse outcome than a zero.
+    """
+    vals = list(vals)
+    return _mean(vals) if vals else 0.0
 from typing import Sequence
 
 from ..schemas import Example, ResponseScore

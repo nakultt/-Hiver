@@ -1,0 +1,8 @@
+{
+  "counts": {
+    "train": 0,
+    "test": 0,
+    "hard": 18
+  },
+  "note": "Hand-authored adversarial split only. The synthetic train/test build was cut off by free-tier rate limits (20 req/min window); run replybench build-dataset to add it."
+}
