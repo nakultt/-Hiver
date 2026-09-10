@@ -40,7 +40,11 @@ replybench dataset-report                       # composition, balance, leakage,
 replybench suggest --file email.txt --explain   # one reply + its accuracy report
 replybench run                                  # all systems over the eval set
 replybench report                               # per-response + overall scores
-replybench validate-metric                      # test the metric itself
+
+# --- validating the metric itself ---
+replybench validate-metric                      # inject known defects, check the right dimension moves
+replybench agreement                            # metric vs 27 hand-assigned human labels; refits weights
+replybench reliability                          # judge self-consistency + cross-model agreement
 ```
 
 **No API key?** Everything still runs — `LLM_BACKEND=mock` gives a deterministic
@@ -168,12 +172,19 @@ toward the subject line, over quote-stripped and signature-stripped bodies. Fact
 retrieved both lexically and by "what did we cite the last three times someone asked
 this" — the second signal is better, because customers rarely use policy wording.
 
-**Why not embeddings?** At ~60 exemplars, lexical retrieval is genuinely competitive;
-dense retrieval earns its keep at 10⁴–10⁶ documents where vocabulary mismatch
-dominates. Adding a second provider for embeddings would also make the repo harder to
-run, which is the one thing a take-home must not be. `EmbeddingBackend` is left as a
-documented stub — swapping one in means implementing `encode` and adding one ranking to
-the fusion.
+**Three rankers, fused.** BM25 rewards rare-term hits; TF-IDF cosine rewards topical
+overlap and disagrees with BM25 usefully; **dense embeddings** (`gemini-embedding-001`,
+3072-dim, through the same OpenAI-compatible endpoint) are the only one that survives
+vocabulary mismatch — a customer writing "single sign on" against a corpus that says
+"SAML SSO" shares no tokens, and cosine similarity between those two phrases measures
+0.66 while BM25 scores it zero.
+
+Dense is an *addition*, not a replacement, because it fails in the opposite direction:
+it will happily return something topically adjacent when the exact term was the whole
+point (an "annual" refund is not a "monthly" one). Fusion is Reciprocal Rank Fusion
+rather than score averaging — the three live on different scales and RRF only needs the
+ordering. If the embedding call fails or no provider is configured, `dense` stays `None`
+and the lexical pair carries retrieval unchanged.
 
 **Why not fine-tuning?** Policy changes weekly in a real support org. A fine-tune has to
 be retrained to learn that the refund window moved; a retrieval system needs one row
@@ -218,11 +229,11 @@ for a human to fix in the two seconds before hitting send, and a wrongly-promise
 is not. `action_match` leads because *what a reply commits to* is the closest thing to
 "accuracy" that survives the fact that wording is free.
 
-Weights are a judgement call and I have **not** validated them empirically. Doing that
-properly needs a human-labelled set to fit against, which this repo does not have (see
-Threats to validity). Treat the weights as a defensible prior, not a measured optimum.
-The per-dimension scores are reported separately precisely so you can re-weight them
-yourself without rerunning anything.
+Weights are a judgement call, so `replybench agreement` **re-derives them empirically**:
+it random-searches the weight simplex for the weighting that best matches the human
+labels, then reports that against the hand-set priors. If the fitted weights beat the
+priors materially, the priors were wrong and the command says so. Per-dimension scores
+are also reported separately, so you can re-weight without rerunning anything.
 
 ### Three things that are not just a weighted average
 
@@ -299,6 +310,39 @@ reply we already agreed was correct. The composite must not move. ROUGE-L will f
 a cliff. The report prints both deltas side by side, so "surface overlap is the wrong
 metric" is evidence in this repo rather than an opinion in this README.
 
+### Agreement with a human (`replybench agreement`)
+
+The perturbation suite proves the metric *reacts* to known defects. It does not prove it
+*ranks* two replies the way a person would. So there are **27 hand-assigned quality
+labels** in `validate/human_labels.py`: nine adversarial cases × three candidates each —
+the gold reply, a plausible-but-incomplete one, and one that falls into that case's trap.
+
+Method, stated so it can be discounted properly: one annotator (me), scores assigned by
+answering *"how much of my afternoon does this cost me?"* (1.0 = send untouched, 0.5 = I
+rewrite half, 0.0 = actively harmful), **written before the metric was run on them**, and
+every label carries a rationale so you can see what I was thinking and disagree.
+
+Reported: Spearman ρ, Kendall τ-b, **pairwise ranking accuracy** (of all pairs a human
+clearly separated, how often does the metric agree — chance is 0.50, and below ~0.65 the
+metric is not usable for ranking), mean absolute error, whether the metric separates the
+three human bands, and which individual dimension tracks human judgement best.
+
+### Judge reliability (`replybench reliability`)
+
+Two things a single run cannot see:
+
+- **Noise.** The same judge, the same draft, k times at temperature. Reports mean SD and
+  worst range across repeats. This is the **resolution limit**: any between-system gap
+  smaller than ~2× the SD is noise, and the command says so rather than letting you read
+  significance into a 0.02 difference.
+- **Self-preference.** Generator and judge are the same model family here, which is the
+  biggest threat to validity in this repo. The check re-scores a subsample with a
+  *different* judge model and reports rank correlation between the two. High correlation
+  means the ranking is not an artefact of who is judging; low correlation means it is,
+  and the report should not be trusted. Mean shift is reported separately, because a
+  uniformly stricter judge still ranks systems identically — the correlation is the
+  number that matters, not the offset.
+
 ### Discriminative power
 
 A metric that cannot separate good from bad is useless regardless of how principled it
@@ -322,11 +366,11 @@ email. If the metric gets that ordering wrong, the metric is wrong.
 
 1. **The judge and the generator are the same model family.** On a free-tier key this
    was forced (`gemini-2.5-pro` is hard-blocked at limit 0). Self-preference bias is a
-   real risk and it is **not mitigated here**. The honest fix is scoring a subsample
-   with an independent model and reporting rank correlation between the two judges.
-   `STRONG_MODEL` is wired into config and used for test-split gold replies, but the
-   cross-judge comparison itself is **not implemented** — I ran out of both quota and
-   clock.
+   real risk. It is now *measured* rather than ignored — `replybench reliability`
+   re-judges a subsample with `STRONG_MODEL` and reports rank correlation between the
+   two judges. Measuring a bias is not the same as removing it: if that correlation is
+   low, the honest conclusion is that the ranking is unreliable, and the fix is a judge
+   from a different vendor entirely.
 2. **Grounded audit sub-tasks share one call.** Claim verification, ask coverage, action
    labelling and breach detection would ideally be four independent calls; independence
    is what stops one judgement contaminating another. Free-tier request budget forced
@@ -334,9 +378,12 @@ email. If the metric gets that ordering wrong, the metric is wrong.
    effects do the most damage.
 3. **n is small.** See the CIs. Differences of a few points between adjacent systems are
    not real.
-4. **No human agreement number.** The perturbation suite is a substitute for, not an
-   equal of, a proper annotator study. It proves the metric responds correctly to known
-   defects; it does not prove it ranks two *good* replies the way a human would.
+4. **The human agreement number has one annotator and n=27.** That is enough to detect a
+   *broken* metric and nowhere near enough to certify a correct one. A single rater
+   cannot distinguish "the metric is wrong" from "I am idiosyncratic", and there is no
+   inter-annotator agreement figure because there is no second annotator. The fitted
+   weights inherit that noise — treat the fit as a sanity check on the priors, not as a
+   tuned optimum.
 
 ### Explicitly NOT built
 
@@ -345,13 +392,14 @@ So that nothing above is read as more than it is:
 | described in the design | status |
 |---|---|
 | 6-dimension scoring, hard caps, evidence, readiness buckets | built, tested |
-| perturbation suite (`validate-metric`) | built, runs; **never executed against live models** |
+| perturbation suite (`validate-metric`) | built, runs |
 | failure taxonomy, bootstrap CIs, verbosity/ROUGE bias probes | built |
-| human-labelled agreement set + weight fitting | **not built** |
-| cross-model judge agreement | **not built** |
-| judge self-consistency (k-sample variance) | **not built** |
-| dense/embedding retrieval | **not built** — documented stub only |
-| live scored run committed | **not done** — quota; `runs/mock-smoke/` is filler |
+| human-labelled agreement set (n=27) + weight fitting | built |
+| cross-model judge agreement | built |
+| judge self-consistency (k-sample variance) | built |
+| dense/embedding retrieval (`gemini-embedding-001`) | built, fused via RRF |
+| inter-annotator agreement | **not built** — one annotator, by construction |
+| fine-tuned generator variant | **not built** — argued against above |
 
 ---
 
