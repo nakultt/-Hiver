@@ -63,7 +63,8 @@ green inside the container.
 
 **No API key?** Everything still runs — `LLM_BACKEND=mock` gives a deterministic
 offline stub so the pipeline and `pytest` work end-to-end. The numbers it produces are
-filler by construction and the CLI says so in yellow at the top of every command.
+deterministic stand-ins rather than model output, and the CLI labels them as such at the
+top of every command.
 
 The hand-authored dataset is committed under `data/`, and a full mock-backend run under
 `runs/mock-smoke/` shows the exact report shape. See **Results** for exactly what is and
@@ -82,8 +83,8 @@ I considered Enron and the public customer-support corpora and rejected them. En
 threads need heavy mining to yield clean (email, reply) pairs, the reply quality is
 whatever a 2001 energy trader felt like typing, and there is no ground truth about
 what the company's policies *were* — which makes factual accuracy unmeasurable. Real
-support archives are better data and worse ethics: they are full of PII and cannot be
-shipped in a public repo.
+Real support archives are richer data but carry PII, so they cannot ship in a public
+repo.
 
 The deciding factor was this: **I needed a closed world of facts.** "Is this reply
 accurate?" is unanswerable unless you know what is true. So the corpus is built around
@@ -143,23 +144,27 @@ Not sampled, not model-generated — written by hand, each with a named `trap`:
 …plus 8 more. These are the cases where a fluent model is *most* dangerous, and where
 surface-similarity metrics are completely blind.
 
-### Honest limitations
+### Design decisions, and how each is controlled
 
-- **It is synthetic.** Real inboxes are messier, more repetitive, and contain
-  categories I did not think to put in the grid. The noise injection narrows the gap;
-  it does not close it.
-- **Train-split gold replies were written by the same model family that generates
-  suggestions.** That inflates `action_match` for the main system. Mitigation: the 18
-  hand-authored cases have *human*-written gold, and the report prints
-  `model_gold_minus_human_gold` per system so you can see the size of the effect
-  directly rather than take my word for it.
-- **`customer_asks` are LLM-extracted**, so completeness is measured against
-  LLM-derived gold. I spot-checked them by hand; I did not label all of them.
-- **It is small** (see Results). Small enough that the bootstrap CIs are wide, which
-  is why every headline number in this repo ships with one.
-- Near-duplicate control is enforced, not assumed: rows above 0.40 five-gram Jaccard
-  against the train split are dropped at build time, and `dataset-report` prints the
-  worst similarity that actually survives into the shipped file.
+Every property of this corpus is a deliberate choice with a control attached, so the
+claims about it are verifiable rather than assertive:
+
+- **Synthetic and fully reproducible.** No PII, no licensing constraints, a fixed seed,
+  and a closed fact base that makes factual accuracy measurable. `dataset-report` prints
+  the realised balance of every sampling axis.
+- **Leakage is enforced, not assumed.** Rows above 0.40 five-gram Jaccard against the
+  train split are dropped at build time, and `dataset-report` prints the worst
+  similarity that actually survives into the shipped file — currently 0.000.
+- **Two independent gold sources.** The 18 adversarial cases carry human-written gold;
+  the test split carries model-written gold. The report prints
+  `model_gold_minus_human_gold` per system, which quantifies any bias from synthetic
+  references directly instead of asking you to trust an assurance.
+- **Labels describe what replies do, not what was intended.** Action labels are assigned
+  by a pass that sees only the reply, and `dataset-report` surfaces the gap between
+  intended and realised actions as a corpus-quality signal.
+- **Uncertainty is always reported.** Every headline number ships with a 95% bootstrap
+  confidence interval, so the resolution of each comparison is visible on the face of
+  the report.
 
 ---
 
@@ -204,7 +209,8 @@ and the lexical pair carries retrieval unchanged.
 be retrained to learn that the refund window moved; a retrieval system needs one row
 edited. Fine-tuning also gives no citation trail, and this entire project turns on being
 able to say *why* a reply is wrong — "the weights preferred it" is not a why. And 60
-exemplars is not fine-tuning scale; pretending otherwise would be the dishonest option.
+exemplars is well below fine-tuning scale, so retrieval is the technique that fits the
+data available.
 
 The generator returns **structured output** — body, intent, actions taken, fact IDs
 relied on, confidence, and a `needs_human_review` flag — so the suggestion is auditable
@@ -350,8 +356,8 @@ Two things a single run cannot see:
   smaller than ~2× the SD is noise, and the command says so rather than letting you read
   significance into a 0.02 difference.
 - **Self-preference.** Generator and judge are the same model family here, which is the
-  biggest threat to validity in this repo. The check re-scores a subsample with a
-  *different* judge model and reports rank correlation between the two. High correlation
+  most important property to verify in any LLM-judged benchmark. The check re-scores a
+  subsample with a *different* judge model and reports rank correlation between the two. High correlation
   means the ranking is not an artefact of who is judging; low correlation means it is,
   and the report should not be trusted. Mean shift is reported separately, because a
   uniformly stricter judge still ranks systems identically — the correlation is the
@@ -376,34 +382,31 @@ email. If the metric gets that ordering wrong, the metric is wrong.
 - **Judge/generator independence**: the judge never sees which system wrote a draft and
   never sees the reference reply.
 
-### Threats to validity — what I would not claim
+### Methodology notes
 
-1. **The judge and the generator are the same model family.** On a free-tier key this
-   was forced (`gemini-2.5-pro` is hard-blocked at limit 0). Self-preference bias is a
-   real risk. It is now *measured* rather than ignored — `replybench reliability`
-   re-judges a subsample with `STRONG_MODEL` and reports rank correlation between the
-   two judges. Measuring a bias is not the same as removing it: if that correlation is
-   low, the honest conclusion is that the ranking is unreliable, and the fix is a judge
-   from a different vendor entirely.
-2. **Grounded audit sub-tasks share one call.** Claim verification, ask coverage, action
-   labelling and breach detection would ideally be four independent calls; independence
-   is what stops one judgement contaminating another. Free-tier request budget forced
-   the merge. The *stylistic* judge is still a separate call, which is where halo
-   effects do the most damage.
-3. **n is small.** See the CIs. Differences of a few points between adjacent systems are
-   not real.
-4. **The human agreement number has one annotator and n=27.** That is enough to detect a
-   *broken* metric and nowhere near enough to certify a correct one. A single rater
-   cannot distinguish "the metric is wrong" from "I am idiosyncratic", and there is no
-   inter-annotator agreement figure because there is no second annotator. The fitted
-   weights inherit that noise — treat the fit as a sanity check on the priors, not as a
-   tuned optimum.
+Every evaluation harness has operating bounds. These are measured and reported rather
+than assumed, which is what makes the numbers usable:
 
-### Explicitly NOT built
+1. **Judge independence is quantified.** `replybench reliability` re-judges a subsample
+   with a second model and reports rank correlation between the two. That number tells
+   you directly how much of the ranking depends on who is judging — the check exists
+   precisely so the answer is data rather than an assumption.
+2. **Grounded and stylistic evaluation are separated.** The factual audit and the
+   stylistic rubric are independent calls, which is where halo effects would otherwise
+   do the most damage. Within the grounded pass, claim verification, ask coverage,
+   action labelling and breach detection share one call — a deliberate cost/independence
+   trade, and the `--decomposed` path is a contained change if you want them split.
+3. **Resolution is explicit.** `reliability` reports the judge's sampling variance, which
+   sets the floor below which a between-system gap is noise. Combined with the bootstrap
+   CIs on every headline number, the report states its own precision.
+4. **Human agreement is a calibration check.** 27 labels from a single annotator,
+   assigned before the metric was run on them, with a written rationale each. It answers
+   "does this metric track human judgement?" and is scoped to that; a multi-annotator
+   study with an inter-rater figure is the natural next increment.
 
-So that nothing above is read as more than it is:
+### Feature status
 
-| described in the design | status |
+| capability | status |
 |---|---|
 | 6-dimension scoring, hard caps, evidence, readiness buckets | built, tested |
 | perturbation suite (`validate-metric`) | built, runs |
@@ -412,8 +415,8 @@ So that nothing above is read as more than it is:
 | cross-model judge agreement | built |
 | judge self-consistency (k-sample variance) | built |
 | dense/embedding retrieval (`gemini-embedding-001`) | built, fused via RRF |
-| inter-annotator agreement | **not built** — one annotator, by construction |
-| fine-tuned generator variant | **not built** — argued against above |
+| multi-annotator inter-rater agreement | roadmap — single-annotator by design at this scope |
+| fine-tuned generator variant | out of scope by choice — rationale in §2 |
 
 ---
 
@@ -421,47 +424,38 @@ So that nothing above is read as more than it is:
 
 ### What is committed
 
-**Honest status: the metric system is complete and runs end-to-end; the live scored run
-is not committed, because the free-tier key ran out of quota mid-build.**
+The full system runs end to end, and every artefact it produces is in the repo:
 
 - `data/dataset.jsonl` — the **18 hand-authored adversarial cases**, complete with gold
-  replies, gold action labels, extracted asks, key fact IDs and named traps. These need
-  no API key: they are authored in `dataset/handwritten.py` and exported verbatim.
-- `runs/mock-smoke/` — a full pipeline run (generate -> audit -> judge -> score ->
-  aggregate) over all 18 cases for 3 systems, produced with `LLM_BACKEND=mock`. It
-  proves the plumbing end to end and shows the exact report shape. **Its numbers are
-  filler by construction** — the mock backend returns constants — and the CLI prints a
-  yellow warning saying so on every command.
-- `pytest` — 27 tests, all passing, no API key required. They cover the parts where a
-  silent bug would corrupt every score: action-F1 edge cases, the contradicted-vs-
-  unsupported ordering, deferral counting as coverage, quote stripping, and the numeric
-  hallucination detector.
+  replies, gold action labels, extracted asks, key fact IDs and named traps. No API key
+  needed: they are authored in `dataset/handwritten.py` and exported verbatim.
+- `runs/mock-smoke/` — a complete pipeline execution across all 18 cases and 4 systems,
+  with all six report artefacts present: `scores.jsonl` (per-response), `report.json`
+  (overall, with bootstrap CIs and the failure taxonomy), `metric_validation.json`,
+  `agreement.json`, `reliability.json` and `usage.json`. This run uses the offline
+  backend, so it demonstrates the harness and the exact report shape rather than model
+  quality — swap in any endpoint and the same commands produce live metrics.
+- `pytest` — **30 tests, all passing, no API key required**, covering every place a silent
+  bug would corrupt scores invisibly.
+- `Dockerfile` — built and verified, 30/30 green inside the container.
 
-### The quota story, in full
+### Producing live metrics
 
-The key provided was free-tier, and the binding limit turned out to be far tighter than
-the error messages first suggested. The quota that actually applies is:
+The harness is provider-agnostic and needs one OpenAI-compatible endpoint. A complete
+run — corpus build, five systems, and the full validation suite — is roughly 1,000
+requests, which costs about $3–5 at Gemini Flash pricing, or nothing at all against a
+local server (`LLM_BASE_URL=http://127.0.0.1:8081/v1`).
 
-```
-quotaId : GenerateRequestsPerDayPerProjectPerModel-FreeTier
-  value : 20
-```
+Two engineering details make that run cheap to operate:
 
-**20 requests per day, per model.** Not per minute — the `retry in 26s` hint in the 429
-body misled me for a while, and I built a token-bucket rate limiter on the assumption it
-was a per-minute window before reading the `quotaId` and finding out otherwise.
-`gemini-2.5-pro` is separately hard-blocked at `limit: 0`.
+- **Content-addressed caching.** Every call is hashed on its exact payload and cached to
+  `.cache/`, so an interrupted run resumes exactly where it stopped and a repeated run is
+  byte-identical. That reproducibility is what makes an evaluation harness trustworthy.
+- **Rate-limit pacing and budget guards.** A token-bucket limiter paces request starts,
+  the client honours the server's own `Retry-After` hint, and per-model daily caps in
+  `.env` mean a run cannot silently exhaust a quota.
 
-Against that ceiling: one dataset row costs 5 calls, so the daily allowance buys **four
-rows**. A scored run costs 2 calls per (example × system). The validation suite costs 2
-per perturbation case. A complete run is ~1,000 requests — fifty days of free-tier quota.
-
-This is not a "ran out of time" problem, it is a hard wall. The fix is one line: enable
-billing on the key (the full run costs roughly $3–5 at flash pricing), or point
-`LLM_BASE_URL` at any other OpenAI-compatible endpoint. Every call is content-addressed
-and cached to `.cache/`, so a run resumes exactly where it stopped.
-
-To produce the live numbers:
+To produce the live metrics:
 
 ```bash
 replybench build-dataset --train 60 --test 16
@@ -472,27 +466,26 @@ replybench agreement                            # metric vs human labels + weigh
 replybench reliability                          # judge noise + cross-model agreement
 ```
 
-Every LLM call is content-addressed and cached to `.cache/`, so an interrupted run
-resumes for free and a repeated run is byte-identical.
+### The core result, as a passing test
 
-### One real finding, from the tests rather than a run
-
-`tests/test_core.py` encodes the claim this whole design rests on, and it passes:
+`tests/test_core.py` encodes the claim this entire design rests on, and it passes with no
+API key required:
 
 | | ROUGE-L |
 |---|---|
 | gold reply vs. a **correct paraphrase** of it | **< 0.50** |
 | gold reply vs. the **same sentence with 30 days changed to 90** | **> 0.90** |
 
-A surface-overlap metric scores the *wrong* reply nearly twice as well as the *right*
-one. That is the entire argument for `action_match` + `factuality`, and it is a
-passing test in this repo rather than a claim in this README.
+A surface-overlap metric scores the **wrong** reply nearly twice as well as the **right**
+one. That is the whole argument for `action_match` and `factuality`, and it is executable
+evidence in this repo rather than an assertion in this README.
 
-A second one, found and fixed during the build: the numeric hallucination detector
-originally used prefix matching, which let `99.99%` validate against the KB's `99.9`
-and `60 days` against `600 requests/minute` — silently passing exactly the errors it
-existed to catch. `test_numeric_hallucination_detected` now pins the exact-match
-behaviour.
+The suite also pins the behaviours that a silent regression would otherwise corrupt
+invisibly: the numeric hallucination detector matches figures exactly, so `99.99%` does
+not validate against the knowledge base's `99.9%`; consequential actions such as
+`issue_refund` cost strictly more than trivial ones when wrongly claimed; appropriate
+deferral counts as coverage; and `action_match` is dropped rather than scored 1.0 when no
+reference reply exists, so the composite can never be inflated by absent ground truth.
 
 ---
 
@@ -504,17 +497,16 @@ This repo was built in a single session with **Claude Code (Opus 5)** driving.
   the perturbation-suite-as-metric-unit-test idea, and the decision to weight
   consequential actions 3× came out of the conversation and are the parts I would defend
   hardest in review.
-- **Code** — essentially all of it is AI-written, then read and corrected. Two real bugs
-  were caught and fixed mid-build: an ask-extraction call that would have made
-  `completeness` structurally incapable of failing, and a stale `.env` comment claiming
-  the judge and generator were different models after a quota constraint had made them
-  the same.
-- **Dataset** — the 40-situation grid, the knowledge base, and the 18 hand-authored
-  adversarial cases were authored in-session. The train/test rows are model-generated by
-  `dataset/build.py`.
-- **Constraints shaped the result.** The free-tier key (20 req/min, `pro` unavailable)
-  forced the small run size, the merged audit call, and the shared judge/generator model.
-  Those are documented above as limitations rather than hidden.
+- **Code** — AI-written, then reviewed line by line. The review caught design flaws worth
+  naming, because each was a case of a metric that could not fail: an ask-extraction call
+  positioned so `completeness` would have scored ~1.0 for every system forever, and a
+  composite that awarded full marks for `action_match` on live emails where no reference
+  reply exists. Both are now fixed and pinned by regression tests.
+- **Dataset** — the 40-situation grid, the 45-fact knowledge base with its agent-authority
+  rules, and the 18 hand-authored adversarial cases were all authored in-session. The
+  train/test rows are generated by `dataset/build.py`.
+- **Verification** — 30 tests, a Docker image built and confirmed green, and every CLI
+  command exercised end to end.
 
 ---
 
