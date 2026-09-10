@@ -1,0 +1,22 @@
+# secrets
+.env
+.env.local
+*.key
+
+# python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+*.egg-info/
+.pytest_cache/
+.ruff_cache/
+build/
+dist/
+
+# llm response cache (regenerable, large)
+.cache/
+
+# os
+.DS_Store
+Thumbs.db
