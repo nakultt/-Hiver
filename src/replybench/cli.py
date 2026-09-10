@@ -25,7 +25,9 @@ from .schemas import Email, Example, Reply
 from .taxonomy import DIMENSIONS
 from .validate import perturb
 
-con = Console()
+# legacy_windows=False stops rich falling back to a cp1252 writer, which
+# cannot encode non-ASCII and crashes the command outright.
+con = Console(legacy_windows=False)
 
 
 def _warn_mock() -> None:
@@ -230,7 +232,7 @@ def cmd_report(args: argparse.Namespace) -> None:
         for k in ("hard_failures", "warnings", "most_missed_actions",
                   "most_over_claimed_actions", "traps_fallen_for"):
             if main_fail.get(k):
-                con.print("  " + k + ": " + ", ".join(a + "×" + str(b) for a, b in main_fail[k][:5]))
+                con.print("  " + k + ": " + ", ".join(a + " x" + str(b) for a, b in main_fail[k][:5]))
         con.print("  ignored-ask rate: " + format(main_fail["ignored_ask_rate"], ".3f"))
 
     if args_show_worst := True:
@@ -266,8 +268,8 @@ def cmd_validate(args: argparse.Namespace) -> None:
 
     t = Table(title="Metric unit tests — inject one known defect, check the right dimension moves")
     t.add_column("defect"); t.add_column("n", justify="right"); t.add_column("targeted")
-    t.add_column("Δ targeted", justify="right"); t.add_column("Δ composite", justify="right")
-    t.add_column("Δ ROUGE-L", justify="right"); t.add_column("detected"); t.add_column("collateral")
+    t.add_column("d targeted", justify="right"); t.add_column("d composite", justify="right")
+    t.add_column("d ROUGE-L", justify="right"); t.add_column("detected"); t.add_column("collateral")
     for kind, r in res.items():
         if kind.startswith("_"):
             continue

@@ -1,0 +1,141 @@
+{
+  "fact_swap": {
+    "n": 1,
+    "targeted_dimensions": [
+      "factuality"
+    ],
+    "mean_delta_by_dimension": {
+      "action_match": 0.0,
+      "factuality": 0.0,
+      "completeness": 0.0,
+      "policy_safety": 0.0,
+      "tone_fit": 0.0,
+      "clarity": 0.0
+    },
+    "mean_delta_composite": 0.0,
+    "mean_delta_rouge_l": -0.0068,
+    "detected": false,
+    "collateral_damage": [],
+    "note": "a policy number replaced with a wrong one"
+  },
+  "drop_answer": {
+    "n": 3,
+    "targeted_dimensions": [
+      "completeness"
+    ],
+    "mean_delta_by_dimension": {
+      "action_match": 0.0,
+      "factuality": 0.0,
+      "completeness": 0.0,
+      "policy_safety": 0.0433,
+      "tone_fit": 0.0433,
+      "clarity": 0.0433
+    },
+    "mean_delta_composite": 0.0121,
+    "mean_delta_rouge_l": -0.2334,
+    "detected": false,
+    "collateral_damage": [],
+    "note": "the paragraph answering one ask deleted"
+  },
+  "rude": {
+    "n": 3,
+    "targeted_dimensions": [
+      "tone_fit"
+    ],
+    "mean_delta_by_dimension": {
+      "action_match": 0.0,
+      "factuality": 0.0,
+      "completeness": 0.0,
+      "policy_safety": 0.1167,
+      "tone_fit": 0.1167,
+      "clarity": 0.1167
+    },
+    "mean_delta_composite": 0.0327,
+    "mean_delta_rouge_l": -0.0414,
+    "detected": false,
+    "collateral_damage": [],
+    "note": "same content, hostile register"
+  },
+  "over_promise": {
+    "n": 3,
+    "targeted_dimensions": [
+      "policy_safety"
+    ],
+    "mean_delta_by_dimension": {
+      "action_match": 0.0,
+      "factuality": 0.0,
+      "completeness": 0.0,
+      "policy_safety": 0.02,
+      "tone_fit": 0.02,
+      "clarity": 0.02
+    },
+    "mean_delta_composite": 0.0056,
+    "mean_delta_rouge_l": -0.0847,
+    "detected": false,
+    "collateral_damage": [],
+    "note": "an unauthorised refund promise appended"
+  },
+  "topic_swap": {
+    "n": 3,
+    "targeted_dimensions": [
+      "action_match",
+      "completeness"
+    ],
+    "mean_delta_by_dimension": {
+      "action_match": 0.0,
+      "factuality": 0.0,
+      "completeness": 0.0,
+      "policy_safety": 0.0367,
+      "tone_fit": 0.0367,
+      "clarity": 0.0367
+    },
+    "mean_delta_composite": 0.0103,
+    "mean_delta_rouge_l": -0.8446,
+    "detected": false,
+    "collateral_damage": [],
+    "note": "a reply to a different email entirely"
+  },
+  "padding": {
+    "n": 3,
+    "targeted_dimensions": [
+      "clarity"
+    ],
+    "mean_delta_by_dimension": {
+      "action_match": 0.0,
+      "factuality": 0.0,
+      "completeness": 0.0,
+      "policy_safety": 0.0633,
+      "tone_fit": 0.0633,
+      "clarity": 0.0633
+    },
+    "mean_delta_composite": 0.0177,
+    "mean_delta_rouge_l": -0.1758,
+    "detected": false,
+    "collateral_damage": [],
+    "note": "80 words of corporate filler inserted"
+  },
+  "control": {
+    "n": 3,
+    "targeted_dimensions": [],
+    "mean_delta_by_dimension": {
+      "action_match": 0.0,
+      "factuality": 0.0,
+      "completeness": 0.0,
+      "policy_safety": 0.0,
+      "tone_fit": 0.0,
+      "clarity": 0.0
+    },
+    "mean_delta_composite": 0.0,
+    "mean_delta_rouge_l": 0.0,
+    "detected": null,
+    "collateral_damage": [],
+    "note": "unperturbed gold reply"
+  },
+  "_summary": {
+    "sensitivity": "0/6 defect classes detected in the targeted dimension",
+    "clean_detections": [],
+    "paraphrase_composite_delta": null,
+    "paraphrase_rouge_delta": null,
+    "headline": "If paraphrase_rouge_delta is strongly negative while paraphrase_composite_delta is near zero, surface-overlap metrics are penalising a reply that is just as good, and the rubric is not."
+  }
+}

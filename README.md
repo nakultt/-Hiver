@@ -218,9 +218,11 @@ for a human to fix in the two seconds before hitting send, and a wrongly-promise
 is not. `action_match` leads because *what a reply commits to* is the closest thing to
 "accuracy" that survives the fact that wording is free.
 
-Weights are a judgement call, so they are also **re-derived empirically** — the
-validation command fits weights against the human-labelled set and reports whether the
-fitted weights agree with these priors.
+Weights are a judgement call and I have **not** validated them empirically. Doing that
+properly needs a human-labelled set to fit against, which this repo does not have (see
+Threats to validity). Treat the weights as a defensible prior, not a measured optimum.
+The per-dimension scores are reported separately precisely so you can re-weight them
+yourself without rerunning anything.
 
 ### Three things that are not just a weighted average
 
@@ -320,9 +322,11 @@ email. If the metric gets that ordering wrong, the metric is wrong.
 
 1. **The judge and the generator are the same model family.** On a free-tier key this
    was forced (`gemini-2.5-pro` is hard-blocked at limit 0). Self-preference bias is a
-   real risk, it is not fully mitigated here, and the honest fix is a cross-model judge
-   check with an independent model — the code path exists (`STRONG_MODEL`), the quota
-   did not.
+   real risk and it is **not mitigated here**. The honest fix is scoring a subsample
+   with an independent model and reporting rank correlation between the two judges.
+   `STRONG_MODEL` is wired into config and used for test-split gold replies, but the
+   cross-judge comparison itself is **not implemented** — I ran out of both quota and
+   clock.
 2. **Grounded audit sub-tasks share one call.** Claim verification, ask coverage, action
    labelling and breach detection would ideally be four independent calls; independence
    is what stops one judgement contaminating another. Free-tier request budget forced
@@ -333,6 +337,21 @@ email. If the metric gets that ordering wrong, the metric is wrong.
 4. **No human agreement number.** The perturbation suite is a substitute for, not an
    equal of, a proper annotator study. It proves the metric responds correctly to known
    defects; it does not prove it ranks two *good* replies the way a human would.
+
+### Explicitly NOT built
+
+So that nothing above is read as more than it is:
+
+| described in the design | status |
+|---|---|
+| 6-dimension scoring, hard caps, evidence, readiness buckets | built, tested |
+| perturbation suite (`validate-metric`) | built, runs; **never executed against live models** |
+| failure taxonomy, bootstrap CIs, verbosity/ROUGE bias probes | built |
+| human-labelled agreement set + weight fitting | **not built** |
+| cross-model judge agreement | **not built** |
+| judge self-consistency (k-sample variance) | **not built** |
+| dense/embedding retrieval | **not built** — documented stub only |
+| live scored run committed | **not done** — quota; `runs/mock-smoke/` is filler |
 
 ---
 
