@@ -1,0 +1,14 @@
+# Convenience wrapper. The only stateful things are the LLM response cache
+# (so an interrupted run resumes for free) and the run artefacts.
+services:
+  replybench:
+    build: .
+    env_file:
+      - .env
+    volumes:
+      - ./.cache:/app/.cache
+      - ./runs:/app/runs
+      - ./data:/app/data
+    # Override at the command line, e.g.
+    #   docker compose run --rm replybench report
+    command: ["--help"]

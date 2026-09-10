@@ -47,6 +47,20 @@ replybench agreement                            # metric vs 27 hand-assigned hum
 replybench reliability                          # judge self-consistency + cross-model agreement
 ```
 
+### Docker
+
+```bash
+docker build -t replybench .
+docker run --rm replybench dataset-report          # offline, no key needed
+docker run --rm --env-file .env   -v "$PWD/.cache:/app/.cache" -v "$PWD/runs:/app/runs"   replybench run                                   # live, key from .env
+```
+
+Or `docker compose run --rm replybench report`. The image defaults to
+`LLM_BACKEND=mock` so a bare `docker run` does something useful with no key. Mount
+`.cache` to make runs resumable across restarts — every LLM call is content-addressed,
+so an interrupted run picks up exactly where it stopped. Verified: `pytest` is 27/27
+green inside the container.
+
 **No API key?** Everything still runs — `LLM_BACKEND=mock` gives a deterministic
 offline stub so the pipeline and `pytest` work end-to-end. The numbers it produces are
 filler by construction and the CLI says so in yellow at the top of every command.
