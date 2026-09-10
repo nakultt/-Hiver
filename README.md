@@ -47,8 +47,9 @@ replybench validate-metric                      # test the metric itself
 offline stub so the pipeline and `pytest` work end-to-end. The numbers it produces are
 filler by construction and the CLI says so in yellow at the top of every command.
 
-The dataset and a completed run are committed under `data/` and `runs/`, so you can read
-real results without spending a token.
+The hand-authored dataset is committed under `data/`, and a full mock-backend run under
+`runs/mock-smoke/` shows the exact report shape. See **Results** for exactly what is and
+is not real in there.
 
 ---
 
